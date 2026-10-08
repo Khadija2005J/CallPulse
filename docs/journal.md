@@ -18,7 +18,7 @@
 
 ### To do
 
-- Write the "Why" column of ADR-001 myself.
+- ~~Write the "Why" column of ADR-001 myself.~~ Done on Day 2 (drafted with Claude's help, to be reviewed and owned).
 
 ### Tomorrow — Day 2
 
@@ -33,6 +33,7 @@
 - Added a traceability table: every business objective is covered by at least one BF.
 - Review: all IDs unique, every BNF has a numeric threshold and a verification method.
 - Aligned `VISION.md`: dashboard latency target 1 s (was 2 s), statistics per period added to the MVP scope.
+- Completed the "Why" column of ADR-001 (12 rationales linked to project constraints and requirements).
 
 ### Decisions
 
