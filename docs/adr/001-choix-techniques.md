@@ -20,18 +20,18 @@ Constraints: one developer, limited time, Windows workstation, no cloud budget, 
 
 | Topic | Choice | Rejected alternatives | Why |
 |-------|--------|-----------------------|-----|
-| Architecture | Layered modular monolith (Domain, Application, Infrastructure, Api) | Microservices | TODO (to be written by me) |
-| Backend | ASP.NET Core 8 + EF Core | Node.js (NestJS), Java (Spring Boot) | TODO (to be written by me) |
-| Database | PostgreSQL | SQL Server, MySQL, MongoDB | TODO (to be written by me) |
-| Frontend | React + TypeScript + Vite | Angular, Vue | TODO (to be written by me) |
-| Real time | SignalR | Raw WebSocket, Server-Sent Events, polling | TODO (to be written by me) |
-| Design patterns | Strategy (call routing), Factory, Observer (domain events) | Hard-coded `if/else` routing, direct service calls | TODO (to be written by me) |
-| CI/CD | Jenkins (main) + GitHub Actions (comparison) | GitLab CI, Azure DevOps | TODO (to be written by me) |
-| Containers and orchestration | Docker, Docker Compose, Kubernetes (kind/k3s) + Helm | Docker Swarm, Nomad, plain Kubernetes manifests / Kustomize | TODO (to be written by me) |
-| Quality and security | SonarQube, Trivy, OWASP ZAP | Snyk, Grype, Burp Suite | TODO (to be written by me) |
-| Monitoring | Prometheus, Grafana, Loki, Alertmanager | ELK stack, Datadog | TODO (to be written by me) |
-| IaC and GitOps | Ansible, ArgoCD | Terraform, Flux | TODO (to be written by me) |
-| Tests | xUnit, Testcontainers, Vitest, Playwright, k6 | NUnit, in-memory database, Jest, Cypress, JMeter | TODO (to be written by me) |
+| Architecture | Layered modular monolith (Domain, Application, Infrastructure, Api) | Microservices | One developer, 12 weeks and ~100 agents do not justify the network calls, distributed data and multiple pipelines of microservices; strict layers keep modules separable so one can be extracted later if needed. |
+| Backend | ASP.NET Core 8 + EF Core | Node.js (NestJS), Java (Spring Boot) | Native SignalR support for the real-time dashboard, strong typing, high performance, and EF Core migrations; it also matches my existing C#/.NET skills, so I can spend the time on DevOps rather than on a new language. |
+| Database | PostgreSQL | SQL Server, MySQL, MongoDB | Calls, agents, queues and statistics are relational data that need joins, aggregates and transactions, which rules out MongoDB; PostgreSQL is free, runs well in Docker/Kubernetes and has first-class Testcontainers and EF Core support, unlike SQL Server's heavier licensing and images. |
+| Frontend | React + TypeScript + Vite | Angular, Vue | Largest ecosystem and fastest learning curve for a single developer; TypeScript catches errors at compile time and can share API contracts; Vite gives near-instant dev builds and is lighter than Angular's full framework. |
+| Real time | SignalR | Raw WebSocket, Server-Sent Events, polling | Built into ASP.NET Core with automatic reconnection, user/group targeting (e.g. per team or queue) and transport fallback, which raw WebSocket would require me to code by hand; polling cannot meet the < 1 s dashboard target (BNF-01) without heavy load. |
+| Design patterns | Strategy (call routing), Factory, Observer (domain events) | Hard-coded `if/else` routing, direct service calls | Routing must support several interchangeable strategies per queue (BF-19), which is exactly the Strategy pattern; Observer decouples status/call events from SignalR, statistics and metrics; Factory centralizes creation of strategies and simulated calls. Each pattern answers a real variation point. |
+| CI/CD | Jenkins (main) + GitHub Actions (comparison) | GitLab CI, Azure DevOps | Jenkins is still the most widespread CI server in enterprises and teaches pipelines as code, agents and plugin administration; GitHub Actions is added as a lightweight comparison. GitLab CI and Azure DevOps would tie the project to another platform without extra learning value. |
+| Containers and orchestration | Docker, Docker Compose, Kubernetes (kind/k3s) + Helm | Docker Swarm, Nomad, plain Kubernetes manifests / Kustomize | Docker Compose gives a one-command local stack; Kubernetes is the industry standard and the learning target, and kind/k3s run it locally at no cost; Helm adds templating, per-environment values and versioned releases that plain manifests lack and that ArgoCD can deploy. |
+| Quality and security | SonarQube, Trivy, OWASP ZAP | Snyk, Grype, Burp Suite | All three are free, self-hostable and integrate into Jenkins: SonarQube for code quality gates, Trivy for image and dependency CVEs, ZAP for dynamic web scanning. Snyk is SaaS with limited free usage, Burp Suite Pro is paid. |
+| Monitoring | Prometheus, Grafana, Loki, Alertmanager | ELK stack, Datadog | Prometheus + Grafana is the de facto standard for Kubernetes and is much lighter than ELK, which matters on one laptop; Loki reuses Grafana for logs; Alertmanager closes the metrics -> alert loop. Datadog is a paid SaaS. |
+| IaC and GitOps | Ansible, ArgoCD | Terraform, Flux | Ansible configures existing machines (Jenkins host, tools) without agents, which fits a local setup with no cloud resources to create; Terraform mainly provisions cloud infrastructure we do not have. ArgoCD has a UI that makes GitOps sync and drift visible, which helps learning compared to Flux. |
+| Tests | xUnit, Testcontainers, Vitest, Playwright, k6 | NUnit, in-memory database, Jest, Cypress, JMeter | xUnit is the default in modern .NET; Testcontainers tests against a real PostgreSQL, avoiding the false confidence of an in-memory database; Vitest is native to Vite; Playwright tests Chromium and Firefox (BNF-24) and handles WebSockets; k6 scripts in JavaScript with thresholds usable directly in CI, unlike JMeter's XML. |
 
 ## Trade-offs per decision
 
