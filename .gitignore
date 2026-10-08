@@ -1,0 +1,39 @@
+# ---- Operating system files ----
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ---- Editors and IDEs ----
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+.vs/
+*.suo
+*.user
+*.swp
+*~
+
+# ---- Secrets and environment ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+
+# ---- .NET (backend, upcoming) ----
+bin/
+obj/
+TestResults/
+
+# ---- Node / Vite (frontend, upcoming) ----
+node_modules/
+dist/
+coverage/
+
+# ---- Logs ----
+*.log
