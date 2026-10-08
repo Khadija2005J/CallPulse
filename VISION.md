@@ -17,7 +17,7 @@ CallPulse is a web platform for **real-time call center supervision and optimiza
 - live view of calls waiting in each queue;
 - automatic assignment of incoming calls to agents based on their skills;
 - tracking of customer waiting time and SLA compliance;
-- dashboards with statistics per agent, per team and per call;
+- dashboards with statistics per agent, per team, per period and per call;
 - full call history.
 
 Calls are **simulated** by a traffic generator. There is no real telephony integration.
@@ -48,7 +48,7 @@ Each indicator can be checked with a simple **yes / no**.
 | # | Indicator | Yes / No |
 |---|-----------|----------|
 | 1 | `docker compose up` starts the whole application (API, frontend, database, simulator) with no manual step. | ☐ |
-| 2 | A supervisor sees an agent status change on the dashboard in under 2 seconds without refreshing the page. | ☐ |
+| 2 | A supervisor sees an agent status change on the dashboard in under 1 second without refreshing the page. | ☐ |
 | 3 | A simulated call is automatically assigned to an available agent who has the required skill. | ☐ |
 | 4 | The dashboard shows the SLA percentage (calls answered in under 20 s) for the current day. | ☐ |
 | 5 | Each push to `main` triggers a Jenkins pipeline that runs build, tests, SonarQube and Trivy. | ☐ |
@@ -70,7 +70,7 @@ Each indicator can be checked with a simple **yes / no**.
 | Simulated call generator with configurable traffic | Native mobile application |
 | Automatic skill-based call routing | Multi-tenant (several companies on one instance) |
 | Waiting time and SLA tracking | Billing and CRM integration |
-| Statistics per agent, team and call | SSO (SAML, OpenID Connect with external providers) |
+| Statistics per agent, team, period and call | SSO (SAML, OpenID Connect with external providers) |
 | Call history | Multi-region high availability |
 | Administration of agents, teams, skills and queues | Workforce management (scheduling, shift planning) |
 | Containerized deployment, CI/CD, monitoring | Omnichannel (chat, email, social networks) |
