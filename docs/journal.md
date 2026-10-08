@@ -18,7 +18,7 @@
 
 ### To do
 
-- ~~Write the "Why" column of ADR-001 myself.~~ Done on Day 2 (drafted with Claude's help, to be reviewed and owned).
+- ~~Write the "Why" column of ADR-001 myself.~~ Done on Day 2.
 
 ### Tomorrow — Day 2
 
