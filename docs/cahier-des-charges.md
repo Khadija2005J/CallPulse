@@ -102,7 +102,7 @@ Priorités MoSCoW : **Must** (indispensable au MVP), **Should** (important, à l
 
 | ID | Exigence | Priorité | Critère de vérification |
 |----|----------|----------|-------------------------|
-| BF-13 | L'administrateur crée, modifie et supprime des files d'attente ; chaque file exige une compétence et est rattachée à une équipe. | Must | Une file créée apparaît dans le tableau de bord et reçoit les appels qui lui sont destinés ; seuls les agents de l'équipe rattachée peuvent en recevoir les appels. |
+| BF-13 | L'administrateur crée, modifie et supprime des files d'attente ; chaque file exige une compétence et est rattachée à une équipe. La suppression est logique (section 7.7). | Must | Une file créée apparaît dans le tableau de bord et reçoit les appels qui lui sont destinés ; seuls les agents de l'équipe rattachée peuvent en recevoir les appels ; une file supprimée ne reçoit plus d'appel et son historique reste consultable. |
 | BF-14 | Le système gère plusieurs files d'attente simultanément. | Must | Avec au moins 3 files actives, chaque appel est placé dans sa file et les files sont suivies séparément. |
 | BF-15 | Le générateur produit des appels simulés selon un débit et une durée moyenne paramétrables par file ; seul l'administrateur peut modifier ce paramétrage. | Must | Avec un débit configuré à N appels/minute, le nombre d'appels générés sur 10 minutes est de 10 × N ± 10 % ; un agent ou un superviseur qui tente de modifier le paramétrage reçoit un refus d'accès. |
 | BF-16 | L'administrateur démarre, arrête et reparamètre le générateur sans redémarrer l'application. | Should | Une modification du débit est appliquée en moins de 10 s, sans redémarrage. |
@@ -112,6 +112,7 @@ Priorités MoSCoW : **Must** (indispensable au MVP), **Should** (important, à l
 | BF-20 | Le générateur simule l'abandon d'un appel quand le client attend trop longtemps. | Should | Un appel dont l'attente dépasse la patience simulée est marqué « Abandonné » et retiré de la file. |
 | BF-21 | Le superviseur réaffecte manuellement un appel en attente à un agent donné. | Won't | Écarté : risque de conflit avec le routage automatique. |
 | BF-40 | Stratégie de routage supplémentaire « agent le plus compétent », fondée sur un niveau de compétence par agent. | Could | Avec deux agents disponibles de niveaux différents, l'appel est affecté à l'agent de niveau le plus élevé. |
+| BF-41 | L'administrateur définit la priorité de chaque file, de 1 (haute) à 3 (basse) ; un agent éligible pour plusieurs files reçoit d'abord les appels de la file la plus prioritaire. | Should | Avec un seul agent disponible, éligible pour deux files de priorités 1 et 2 qui ont chacune un appel en attente, l'agent reçoit l'appel de la file de priorité 1. |
 
 ### 4.4 Supervision en temps réel
 
@@ -131,8 +132,9 @@ Priorités MoSCoW : **Must** (indispensable au MVP), **Should** (important, à l
 | BF-28 | L'administrateur définit pour chaque file une cible SLA : X % des appels décrochés en moins de Y secondes. | Must | La cible enregistrée (par exemple 80 % / 20 s) est utilisée dans le calcul de conformité de la file. |
 | BF-29 | Le système calcule et affiche en temps réel le taux de conformité SLA de chaque file pour la journée en cours. | Must | Sur un jeu d'appels connu, le taux affiché est égal au taux calculé à la main. |
 | BF-30 | Un indicateur de couleur signale l'état SLA de chaque file : vert si le taux est supérieur ou égal à la cible, orange s'il est en dessous de la cible d'au plus N points, rouge au-delà. N est paramétrable par file (valeur par défaut : section 7.1). | Must | Avec une cible de 80 % et N = 10 : un taux de 82 % affiche vert, 75 % affiche orange, 69 % affiche rouge. |
-| BF-31 | Une notification visuelle alerte le superviseur quand une file passe au rouge. | Should | Le passage au rouge déclenche une notification sur le tableau de bord en moins de 1 s. |
+| BF-31 | Une notification visuelle alerte le superviseur quand une file passe au niveau rouge ; le niveau orange n'affiche que le badge (niveaux SLA : section 7.6). | Should | Le passage au rouge déclenche une notification sur le tableau de bord en moins de 1 s ; le passage à l'orange n'en déclenche aucune. |
 | BF-32 | Le superviseur consulte l'historique du taux SLA par jour et par file. | Could | Pour un jour passé, le taux affiché correspond aux appels de ce jour. |
+| BF-42 | En plus du taux de la journée, le système affiche le taux SLA de chaque file sur une fenêtre glissante dont la durée est paramétrable par file par l'administrateur (valeur par défaut : section 7.1). | Should | Avec une fenêtre de 30 min, le taux affiché ne prend en compte que les appels comptabilisés pendant les 30 dernières minutes. |
 
 ### 4.6 Statistiques et historique
 
@@ -151,8 +153,8 @@ Priorités MoSCoW : **Must** (indispensable au MVP), **Should** (important, à l
 | Objectif | Exigences qui le couvrent |
 |----------|---------------------------|
 | OBJ-01 | BF-22, BF-23, BF-24, BF-25 |
-| OBJ-02 | BF-12, BF-13, BF-17, BF-18, BF-19, BF-40 |
-| OBJ-03 | BF-28, BF-29, BF-30, BF-31 |
+| OBJ-02 | BF-12, BF-13, BF-17, BF-18, BF-19, BF-40, BF-41 |
+| OBJ-03 | BF-28, BF-29, BF-30, BF-31, BF-42 |
 | OBJ-04 | BF-07, BF-08, BF-09, BF-27 |
 | OBJ-05 | BF-33, BF-34, BF-35, BF-36, BF-37 |
 | OBJ-06 | BF-03, BF-12, BF-13, BF-28 |
@@ -166,7 +168,7 @@ Charge nominale de référence : 100 agents connectés, 5 superviseurs, généra
 |----|---------|--------------------|---------------------|
 | BNF-01 | Performance | Le délai entre un événement (changement de statut, nouvel appel) et son affichage sur le tableau de bord est inférieur à 1 s au 95e percentile, sous charge nominale. | Test Playwright horodatant l'événement et l'affichage ; histogramme Prometheus du délai de diffusion SignalR. |
 | BNF-02 | Performance | Le temps de réponse de l'API est inférieur à 300 ms au 95e percentile, sous charge nominale. | Seuil k6 `http_req_duration: p(95)<300` dans le pipeline. |
-| BNF-03 | Performance | Un appel est affecté en moins de 500 ms après qu'un agent compétent devient disponible (95e percentile). | Métrique Prometheus du délai d'affectation, vérifiée pendant le test de charge. |
+| BNF-03 | Performance | Quand un agent éligible existe, un appel passe « Affecté » en moins de 500 ms (95e percentile). Le délai est mesuré à partir de la création de l'appel si un agent éligible est déjà « Disponible », ou à partir du passage à « Disponible » de l'agent si l'appel attendait déjà. Les appels sans agent éligible ne sont pas mesurés. | Métrique Prometheus du délai d'affectation (instant de départ défini ci-contre → passage « Affecté »), vérifiée pendant le test de charge. |
 | BNF-04 | Capacité | Test de marge (5 × la charge nominale) : le système supporte 500 utilisateurs simulés simultanés pendant 10 minutes, avec un taux d'erreur inférieur à 1 % et un p95 API inférieur à 500 ms. | Scénario k6 à 500 utilisateurs virtuels ; seuils `http_req_failed: rate<0.01` et `http_req_duration: p(95)<500`. |
 | BNF-05 | Sécurité | Toutes les routes de l'API, sauf la connexion et les sondes de santé, exigent un jeton JWT valide ; la durée de vie du jeton est au plus de 60 minutes. | Tests d'intégration : sans jeton ou avec un jeton expiré, l'API répond 401. |
 | BNF-06 | Sécurité | Les mots de passe sont stockés uniquement sous forme hachée et salée (PBKDF2 via ASP.NET Core Identity, ou bcrypt). | Test d'intégration vérifiant qu'aucun mot de passe en clair n'est présent en base ; revue de code. |
@@ -184,12 +186,13 @@ Charge nominale de référence : 100 agents connectés, 5 superviseurs, généra
 | BNF-18 | Portabilité | L'application se déploie sur un cluster kind ou k3s avec une seule commande `helm install`, tous les pods étant prêts en moins de 5 minutes. | `helm install` puis `kubectl wait --for=condition=Ready pods --all --timeout=300s`. |
 | BNF-19 | Observabilité | L'API expose sur `/metrics` au moins : la longueur de chaque file, l'attente la plus longue, le taux SLA par file, le nombre d'agents par statut et la durée des requêtes HTTP. | Requête sur `/metrics` ; métriques visibles dans Prometheus et dans un tableau de bord Grafana versionné. |
 | BNF-20 | Observabilité | Les logs sont structurés (JSON), portent un identifiant de corrélation, et sont consultables dans Grafana via Loki. | Requête LogQL retrouvant tous les logs d'une requête à partir de son identifiant de corrélation. |
-| BNF-21 | Observabilité | Une alerte est émise par Alertmanager moins de 2 minutes après que le taux SLA d'une file passe sous sa cible. | Forcer une dégradation du SLA avec le générateur et chronométrer l'alerte. |
+| BNF-21 | Observabilité | Alertmanager émet une alerte `warning` quand le niveau SLA d'une file reste orange pendant la durée W, et une alerte `critical` moins de 2 minutes après son passage au rouge ; aucune alerte au niveau vert ni « N/A » (niveaux SLA : section 7.6). | Forcer une dégradation du SLA avec le générateur jusqu'à l'orange puis au rouge, et chronométrer chaque alerte. |
 | BNF-22 | Qualité du code | Chaque build de `main` passe le quality gate SonarQube : 0 nouveau bug ni vulnérabilité, duplication inférieure à 3 % et couverture du nouveau code d'au moins 70 %. | Étape « quality gate » du pipeline Jenkins : le pipeline échoue si le gate échoue. |
 | BNF-23 | Qualité du code | Le code frontend et backend ne comporte aucune erreur de lint ni aucun avertissement de compilation. | `npm run lint` (ESLint) et `dotnet build -warnaserror` dans le pipeline. |
 | BNF-24 | Compatibilité | L'interface fonctionne sur les deux dernières versions de Chrome, Edge et Firefox, pour une résolution d'au moins 1366 × 768. | Tests Playwright exécutés sur Chromium et Firefox. |
 | BNF-25 | Utilisabilité | L'interface est entièrement en français. | Revue des écrans : aucun libellé visible en anglais ; tests Playwright fondés sur les libellés français. |
 | BNF-26 | Données | L'historique des appels est conservé 90 jours ; au-delà, les appels sont purgés automatiquement. | Test d'intégration : un appel daté de 91 jours est supprimé par la tâche de purge, un appel daté de 89 jours est conservé. |
+| BNF-27 | Observabilité | Alertmanager émet une alerte si l'API est injoignable pendant plus de 1 minute. | Règle Prometheus `up{job="api"} == 0` avec `for: 1m` ; arrêter l'API pendant 2 minutes (`docker stop` ou mise à l'échelle à 0 réplica) : l'alerte est émise ; l'arrêter 30 s : aucune alerte. |
 
 ## 6. Acteurs
 
@@ -223,7 +226,7 @@ Légende : **Oui** = autorisé ; **Non** = refusé (403, BNF-07) ; **—** = san
 | Statistiques et historique : de tous | Non | Oui | Oui | — | BF-32 à BF-37 |
 | Gérer les comptes et les rôles | Non | Non | Oui | — | BF-03 |
 | Gérer les équipes, les compétences et l'affectation des agents | Non | Non | Oui | — | BF-12 |
-| Configurer les files (compétence, équipe, priorité, patience), les stratégies et le SLA | Non | Non | Oui | — | BF-13, BF-19, BF-28, section 7.1 |
+| Configurer les files (compétence, équipe, priorité, patience), les stratégies et le SLA | Non | Non | Oui | — | BF-13, BF-19, BF-28, BF-41, BF-42, section 7.1 |
 | Paramétrer, démarrer et arrêter le générateur | Non | Non | Oui | — | BF-15, BF-16 |
 | Créer des appels simulés | Non | Non | Non | Oui (générateur) | BF-15 |
 | Affecter les appels | Non | Non | Non | Oui (dispatcher) | BF-17, BF-21 (Won't) |
@@ -231,7 +234,7 @@ Légende : **Oui** = autorisé ; **Non** = refusé (403, BNF-07) ; **—** = san
 
 ## 7. Règles métier
 
-Chaque règle (RG) est une phrase vérifiable par au moins un test unitaire de la couche Domain, avec une horloge injectable pour rendre les durées déterministes. La colonne « BF liées » indique les exigences que la règle précise.
+Chaque règle (RG) est une phrase vérifiable par au moins un test automatisé : un test unitaire de la couche Domain, avec une horloge injectable pour rendre les durées déterministes, sauf mention contraire dans la règle. La colonne « BF liées » indique les exigences (BF ou BNF) que la règle précise.
 
 ### 7.1 Paramètres de référence
 
@@ -243,8 +246,10 @@ Les valeurs par défaut sont définies **uniquement ici** ; les règles y font r
 | O | Objectif SLA | 80 % | Par file | Administrateur |
 | N | Largeur de la zone orange sous l'objectif | 10 points | Par file | Administrateur |
 | P | Patience maximale d'un appel en attente avant abandon | 120 s | Par file | Administrateur |
-| F | Fenêtre glissante du taux SLA | 30 min | Globale | Administrateur |
-| R | Intervalle maximal entre deux réévaluations des appels en attente | 1 s | Globale | Non (constante technique) |
+| F | Fenêtre glissante du taux SLA | 30 min | Par file | Administrateur |
+| W | Durée en continu au niveau orange avant l'alerte `warning` | 5 min | Globale | Non (règle d'alerte versionnée) |
+| R | Intervalle maximal du cycle de sécurité qui réévalue les appels en attente | 1 s | Globale | Non (constante technique) |
+| Z | Fuseau horaire du centre, qui définit la journée SLA | Europe/Paris | Globale | Configuration de déploiement |
 | PRIO | Priorité de la file (1 = haute, 3 = basse) | 2 | Par file | Administrateur |
 | STRAT | Stratégie de routage | Agent inactif depuis le plus longtemps | Par file | Administrateur |
 
@@ -321,16 +326,17 @@ Chaque stratégie est une implémentation du patron Strategy ; la stratégie d'u
 | RG-21 | Stratégie « agent inactif depuis le plus longtemps » : l'agent choisi est celui dont le dernier passage à « Disponible » (RG-09) est le plus ancien. | BF-19 |
 | RG-22 | Stratégie « tour de rôle » : les agents éligibles sont triés par identifiant croissant, et l'agent choisi est le premier dont l'identifiant est strictement supérieur à celui du dernier agent servi par cette file ; s'il n'y en a pas, ou si la file n'a encore servi personne, c'est le premier de la liste. | BF-19 |
 | RG-23 | En cas d'égalité entre plusieurs agents dans une stratégie, l'agent qui a le plus petit identifiant est choisi. | BF-19 |
-| RG-24 | Si aucun agent n'est éligible, l'appel reste « En attente » dans sa file ; il est réévalué à chaque événement qui peut rendre un agent éligible (agent qui passe « Disponible », changement de compétence ou d'équipe) et au moins toutes les R. | BF-18, BNF-03 |
+| RG-24 | L'affectation est déclenchée par événement (appel mis en attente, agent qui passe « Disponible », changement de compétence ou d'équipe), et un cycle de sécurité réévalue en plus tous les appels en attente au moins toutes les R ; sans agent éligible, l'appel reste « En attente » dans sa file. | BF-18, BNF-03 |
 | RG-25 | Un agent ne se voit jamais affecter plus d'un appel à la fois. | BF-09, BF-17 |
+| RG-37 | Même quand plusieurs déclenchements du dispatcher sont simultanés (événements et cycle de sécurité), un appel n'est affecté qu'une seule fois et un agent n'est engagé que sur un seul appel ; vérifié par un test de concurrence qui lance des affectations en parallèle sur les mêmes appels et les mêmes agents. | BF-09, BF-17 |
 
 ### 7.5 Priorités des files
 
 | ID | Règle | BF liées |
 |----|-------|----------|
-| RG-26 | Chaque file a une priorité PRIO entière de 1 (haute) à 3 (basse) ; toute autre valeur est refusée à l'enregistrement. | BF-13, BF-14 |
-| RG-27 | Le dispatcher traite les appels en attente par priorité de file croissante : un agent qui se libère et qui est éligible pour plusieurs files reçoit l'appel de la file la plus prioritaire. | BF-14, BF-17 |
-| RG-28 | À priorité égale, l'appel qui attend depuis le plus longtemps est traité en premier ; à instant d'arrivée identique, c'est celui de la file qui a le plus petit identifiant. | BF-14 |
+| RG-26 | Chaque file a une priorité PRIO entière de 1 (haute) à 3 (basse) ; toute autre valeur est refusée à l'enregistrement. | BF-41 |
+| RG-27 | Le dispatcher traite les appels en attente par priorité de file croissante : un agent qui se libère et qui est éligible pour plusieurs files reçoit l'appel de la file la plus prioritaire. | BF-41, BF-14 |
+| RG-28 | À priorité égale, l'appel qui attend depuis le plus longtemps est traité en premier ; à instant d'arrivée identique, c'est celui de la file qui a le plus petit identifiant. | BF-41, BF-14 |
 
 > **Évolution Could, non implémentée dans le MVP :** un marqueur « VIP » sur un appel, qui le ferait passer devant les autres appels de sa file.
 
@@ -342,10 +348,23 @@ Chaque stratégie est une implémentation du patron Strategy ; la stratégie d'u
 | RG-30 | Les appels comptabilisés d'une période sont les appels de la file décrochés ou abandonnés pendant cette période ; les appels encore « En attente » ne sont pas comptés. | BF-29 |
 | RG-31 | Convention : un appel abandonné compte toujours dans les appels comptabilisés et jamais dans les appels décrochés dans le seuil, quel que soit son temps d'attente. | BF-20, BF-29 |
 | RG-32 | Taux SLA = (appels décrochés dans le seuil / appels comptabilisés) × 100. | BF-29 |
-| RG-33 | Le taux est calculé sur deux périodes : la journée en cours (depuis 00:00 dans le fuseau horaire configuré du centre) et la fenêtre glissante des F dernières minutes. | BF-29 |
-| RG-34 | Pour chaque période, l'indicateur est vert si taux ≥ O, orange si O − N ≤ taux < O, et rouge si taux < O − N ; la comparaison utilise la valeur non arrondie, et l'affichage arrondit à 0,1 point. | BF-30 |
+| RG-33 | Le taux est calculé sur deux périodes : la journée en cours (RG-38) et la fenêtre glissante des F dernières minutes de la file. | BF-29, BF-42 |
+| RG-34 | Le niveau SLA d'une période est donné par la table des niveaux ci-dessous ; la comparaison utilise la valeur non arrondie, et l'affichage arrondit à 0,1 point. | BF-30 |
 | RG-35 | Si une période ne compte aucun appel comptabilisé, le taux affiché est « N/A », l'indicateur est gris, et aucune notification ni alerte n'est émise. | BF-29, BF-30, BF-31 |
-| RG-36 | La notification de passage au rouge (BF-31) et l'alerte Alertmanager (BNF-21) se fondent sur le taux de la journée en cours ; le taux de la fenêtre glissante est affiché à titre d'information. | BF-31, BNF-21 |
+| RG-36 | La notification (BF-31) et les alertes Alertmanager (BNF-21) se fondent sur le niveau de la journée en cours ; le niveau de la fenêtre glissante est affiché avec son badge, sans notification ni alerte. | BF-31, BF-42, BNF-21 |
+| RG-38 | Tous les horodatages sont enregistrés en UTC (type PostgreSQL `timestamptz`) ; la journée SLA va de 00:00 à 24:00 dans le fuseau Z du centre, convertie en UTC pour les calculs. | BF-29 |
+| RG-39 | Au moment où un appel est comptabilisé (décroché ou abandon), le résultat « dans le seuil » ou « hors seuil » est enregistré sur l'appel avec le seuil T en vigueur à cet instant, et n'est jamais recalculé. | BF-28, BF-29 |
+| RG-40 | Une modification de T, O, N ou F n'entraîne aucun recalcul rétroactif : T ne s'applique qu'aux appels comptabilisés après la modification (RG-39), et O, N et F, qui ne sont pas enregistrés sur les appels, ne changent que le niveau affiché et les alertes à partir de la modification. | BF-28, BF-30, BF-42 |
+| RG-41 | Toute modification d'un paramètre SLA (T, O, N, F) est journalisée avec son auteur, son horodatage, l'ancienne valeur et la nouvelle valeur. | BF-28 |
+
+**Niveaux SLA et alertes** (seule table de référence pour BF-30, BF-31 et BNF-21) :
+
+| Niveau | Condition | Tableau de bord | Alertmanager |
+|--------|-----------|-----------------|--------------|
+| Vert | taux ≥ O | Badge vert | Aucune alerte |
+| Orange | O − N ≤ taux < O | Badge orange | `warning` si le niveau reste orange en continu pendant W |
+| Rouge | taux < O − N | Badge rouge et notification (BF-31) | `critical`, émise en moins de 2 minutes (BNF-21) |
+| N/A | Aucun appel comptabilisé (RG-35) | Badge gris, « N/A » | Aucune alerte |
 
 **Exemple chiffré** (file « Facturation », T = 20 s, O = 80 %, N = 10 points, journée en cours) :
 
@@ -359,6 +378,14 @@ Chaque stratégie est une implémentation du patron Strategy ; la stratégie d'u
 | Indicateur | 70 ≤ 76 < 80 → **orange** |
 
 Cas limites à tester : 40 / 50 = 80 % → vert (borne incluse) ; 35 / 50 = 70 % → orange (borne incluse) ; 34 / 50 = 68 % → rouge ; un appel décroché à exactement 20,0 s est hors seuil ; 0 appel comptabilisé → « N/A ».
+
+### 7.7 Suppression d'une file
+
+| ID | Règle | BF liées |
+|----|-------|----------|
+| RG-42 | La suppression d'une file qui contient des appels « En attente », « Affecté » ou « En cours » est refusée avec le code `FILE_NON_VIDE` (HTTP 409 côté API, vérifié par un test d'intégration). | BF-13 |
+| RG-43 | Sinon, la suppression est logique : la file est désactivée et ses appels restent dans l'historique et dans les statistiques. | BF-13, BF-33 |
+| RG-44 | Une file désactivée refuse tout nouvel appel : le générateur ne lui en crée plus, et toute création d'appel vers cette file est refusée. | BF-13, BF-15 |
 
 ## 8. Contraintes
 
@@ -400,7 +427,7 @@ Le projet est accepté lorsque chaque critère est coché (oui / non) :
 - [ ] Un appel créé par le générateur est affecté à un agent « Disponible » qui possède la compétence requise et appartient à l'équipe de la file (RG-18, BF-17).
 - [ ] Le taux SLA affiché pour une file, ainsi que sa couleur, correspondent au calcul manuel sur un jeu d'appels de test qui couvre l'exemple et les cas limites de la section 7.6 (RG-29 à RG-35, BF-29).
 - [ ] Un push sur `main` déclenche automatiquement le build, les tests et le déploiement (OBJ-T01, OBJ-T06).
-- [ ] L'arrêt volontaire de l'API (`docker stop` ou mise à l'échelle à 0 réplica) déclenche une alerte dans Alertmanager en moins de 2 minutes (voir 11).
+- [ ] Une API injoignable pendant plus de 1 minute (`docker stop` ou mise à l'échelle à 0 réplica) déclenche une alerte dans Alertmanager (BNF-27).
 
 ## 11. Points ouverts (revue du Jour 3)
 
@@ -408,16 +435,22 @@ Le projet est accepté lorsque chaque critère est coché (oui / non) :
 
 | # | Point | Décision provisoire |
 |---|-------|---------------------|
-| 1 | Les priorités de file (RG-26 à RG-28) et la fenêtre glissante du SLA (RG-33) n'ont pas de BF dédiée en partie 1. | Rattachées à BF-14 et BF-29 ; créer des BF dédiées au Jour 4. |
-| 2 | Une réévaluation « toutes les secondes » seule ne permet pas de respecter BNF-03 (affectation en moins de 500 ms). | Affectation déclenchée par événement, avec un cycle de sécurité toutes les R (RG-24). |
-| 3 | BF-31 notifie au passage au **rouge**, alors que BNF-21 alerte dès le passage **sous l'objectif** (orange). | Seuils différents conservés tels quels ; à confirmer. |
-| 4 | Le critère « alerte si l'API est arrêtée » n'a pas de BNF, et le délai de 2 minutes est une proposition. | Ajouter une BNF au Jour 4. |
-| 5 | Le fuseau horaire qui définit la « journée en cours » n'est pas spécifié (les conteneurs sont en UTC par défaut). | Paramètre de déploiement à définir. |
+| 1 | Les priorités de file (RG-26 à RG-28) et la fenêtre glissante du SLA (RG-33) n'ont pas de BF dédiée en partie 1. | **Résolu :** BF-41 et BF-42 ajoutées. |
+| 2 | Une réévaluation « toutes les secondes » seule ne permet pas de respecter BNF-03 (affectation en moins de 500 ms). | **Résolu :** affectation par événement avec cycle de sécurité (RG-24), absence de double affectation (RG-37), mesure définie dans BNF-03. |
+| 3 | BF-31 notifie au passage au **rouge**, alors que BNF-21 alerte dès le passage **sous l'objectif** (orange). | **Résolu :** table unique des niveaux SLA et alertes (section 7.6), BF-31 et BNF-21 mises à jour. |
+| 4 | Le critère « alerte si l'API est arrêtée » n'a pas de BNF, et le délai de 2 minutes est une proposition. | **Résolu :** BNF-27 (API injoignable plus de 1 minute). |
+| 5 | Le fuseau horaire qui définit la « journée en cours » n'est pas spécifié (les conteneurs sont en UTC par défaut). | **Résolu :** stockage UTC et fuseau Z, Europe/Paris par défaut (RG-38). |
 | 6 | Aucune BF ne permet à un agent de consulter ses propres statistiques. | Hors MVP ; candidate Could au Jour 4. |
 | 7 | Le statut « Après appel » et le marqueur « VIP » n'ont pas de BF. | Could, non implémentés ; à inscrire au backlog s'ils sont retenus. |
 | 8 | « En moins de T secondes » est interprété strictement : un appel décroché à exactement T est hors seuil (RG-29). | Décision prise. |
 | 9 | BF-19 ne précise pas qui configure la stratégie d'une file. | Administrateur, comme BF-13 et BF-28. |
 | 10 | Un agent qui ferme son navigateur sans se déconnecter reste dans son statut : seul le forçage manuel (BF-27) le corrige. | Détection automatique hors MVP ; à évaluer. |
-| 11 | BF-13 permet de supprimer une file, mais le sort de ses appels en attente n'est pas défini. | À décider (refuser la suppression tant que des appels attendent ?). |
-| 12 | Une modification de T, O ou N en cours de journée : on ne sait pas si le taux du jour est recalculé avec les nouvelles valeurs. | À décider. |
+| 11 | BF-13 permet de supprimer une file, mais le sort de ses appels en attente n'est pas défini. | **Résolu :** refus si la file n'est pas vide, sinon suppression logique (RG-42 à RG-44). |
+| 12 | Une modification de T, O ou N en cours de journée : on ne sait pas si le taux du jour est recalculé avec les nouvelles valeurs. | **Résolu :** aucun recalcul rétroactif, résultat figé sur l'appel, modifications journalisées (RG-39 à RG-41). |
 | 13 | Le persona Sara gère « son » équipe, mais un superviseur voit toutes les équipes. | Cohérent grâce au filtre BF-26 ; un périmètre par équipe est hors MVP. |
+| 14 | RG-41 (journal des modifications des paramètres SLA) n'a pas de BF ni de BNF source : BF-28 ne parle pas d'audit. | Créer une BF ou une BNF d'audit au Jour 4. |
+| 15 | RG-38 : le stockage des horodatages en UTC (`timestamptz`) n'a pas de BNF source ; seule la journée SLA est couverte par BF-29. | Créer une BNF « Données » au Jour 4. |
+| 16 | La patience P est paramétrable par file par l'administrateur (section 7.1, RG-15), mais BF-20 ne parle que d'une « patience simulée ». | Compléter BF-20 ou créer une BF au Jour 4. |
+| 17 | Le critère d'acceptation « un push sur `main` déclenche build, tests et déploiement » ne s'appuie que sur des objectifs (OBJ-T01, OBJ-T06), pas sur une BNF. | Créer une BNF « Livraison continue » au Jour 4. |
+| 18 | L'accès en lecture seule de l'administrateur au tableau de bord et aux statistiques (matrice 6.2) n'est porté par aucune BF : BF-04 ne traite que le refus opposé à l'agent. | Compléter BF-04 au Jour 4. |
+| 19 | RG-02 (statut initial « Hors ligne ») et RG-07 (déconnexion différée pendant un appel) sont rattachées à BF-03, BF-08 et BF-02, mais ces BF n'énoncent pas ces comportements. | Source indirecte acceptée ; à confirmer au Jour 4. |
