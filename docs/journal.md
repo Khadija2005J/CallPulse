@@ -81,6 +81,21 @@
 - The Day 3 brief contradicted part 1 on several points (document language, orange band 5 vs 10, routing strategies, queue–team link). Solved by explicit decisions before writing.
 - Making every rule unit-testable: UI behaviour was moved out of the rules, and an injectable clock is assumed for durations.
 
+### Addendum — review fixes (same day)
+
+Two review passes on part 2, committed as `docs: fix review findings in requirements specification` and `docs: close traceability gaps in requirements specification`.
+
+Decisions taken:
+
+- **Event-driven assignment:** dispatch runs when a call is queued or an agent becomes available, with the 1 s tick only as a safety net; no double assignment under concurrency (RG-37, concurrency test). BNF-03 now defines how the 500 ms is measured.
+- **Unified alert levels:** one table in section 7.6. Green: no alert. Orange: badge, Alertmanager `warning` after 5 min. Red: badge plus notification, Alertmanager `critical`. BF-31 and BNF-21 point to it.
+- **Soft delete of queues:** deletion refused (HTTP 409) while calls are Waiting, Assigned or InProgress; otherwise the queue is deactivated, its history kept, and it accepts no new calls.
+- **No retroactive SLA recalculation:** changing T affects only later calls; changing the window F changes the displayed rate at once; changing O or N changes only the level and alerts. Every SLA parameter change is audited (BF-43).
+- **Results recorded at answer or abandon:** each call stores "within / outside threshold" with the T in force at that moment, never recomputed.
+- **Time zone as a deployment setting:** timestamps stored in UTC (`timestamptz`, BNF-28); the SLA day uses the center's time zone (default Europe/Paris), not editable in the app.
+
+Traceability: every RG and every acceptance criterion now cites a BF or BNF (47 BF, 29 BNF, 44 RG). Remaining TODO: the CI/CD duration `X minutes` in BNF-29.
+
 ### Tomorrow — Day 4
 
 - Product Backlog: epics, user stories with acceptance criteria, MoSCoW priorities.
