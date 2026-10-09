@@ -52,3 +52,36 @@
 ### Tomorrow — Day 3
 
 - Requirements document, part 2: actors in detail and business rules (agent status transitions, routing algorithm, exact SLA definition), constraints, deliverables, global acceptance criteria.
+
+## Day 3 — 2026-10-09 (Sprint 0, pre-project)
+
+### Done
+
+- Wrote `docs/cahier-des-charges.md` part 2 (in French, like part 1): actors and rights matrix (section 6), 36 business rules RG-01..RG-36 (section 7), constraints CT-01..09, deliverables LIV-01..12, global acceptance criteria as yes/no checkboxes (sections 8 to 10).
+- Single table of reference parameters (section 7.1): every default value (T = 20 s, O = 80 %, N = 10 points, P = 120 s, F = 30 min, R = 1 s) is defined once and referenced by symbol.
+- Full agent status transition table (4 × 4, no undefined cell) with error codes and an explicit evaluation order.
+- SLA worked example: 38 / 50 = 76 % → orange, plus boundary cases (80 % green, 70 % orange, 68 % red, exactly 20.0 s out of threshold, no calls → N/A).
+- Consistency review: 13 open points recorded in section 11 instead of being silently fixed.
+
+### Decisions
+
+- Document language stays French (consistent with part 1 and BF/BNF wording).
+- Orange band default changed from 5 to 10 points (BF-30 updated).
+- Routing strategies stay as in BF-19: "longest idle" (default) and "round robin"; skill matching is an eligibility filter, not a strategy.
+- Each queue is linked to one team; only that team's agents are eligible (BF-13 updated).
+- Supervisor can force Available / On break / Offline, never "On call", and cannot bring an agent out of Offline.
+- Supervisor sees all teams; Administrator has read-only access to dashboard and statistics; agents do not see their own statistics (Could candidate).
+- SLA: abandoned calls count as failures (denominator = answered + abandoned); "under 20 s" is strict; colour and alerts use the daily rate, the 30-min window is informative.
+- Patience: 120 s default, configurable per queue.
+- "Wrap-up" status and "VIP" marker: Could, not implemented.
+- Dispatch is event-driven with a 1 s safety cycle, because a pure 1 s poll would break BNF-03 (< 500 ms).
+
+### Difficulties
+
+- The Day 3 brief contradicted part 1 on several points (document language, orange band 5 vs 10, routing strategies, queue–team link). Solved by explicit decisions before writing.
+- Making every rule unit-testable: UI behaviour was moved out of the rules, and an injectable clock is assumed for durations.
+
+### Tomorrow — Day 4
+
+- Product Backlog: epics, user stories with acceptance criteria, MoSCoW priorities.
+- Turn the open points of section 11 into backlog items or decisions (missing BF for queue priority and SLA window, API-down alert BNF, time zone, queue deletion).
