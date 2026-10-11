@@ -1,6 +1,6 @@
 # CallPulse — Cahier des charges
 
-- **Version :** 0.3 (brouillon) — partie 1 (sections 1 à 5) et partie 2 (sections 6 à 11), alignée sur le [Product Backlog](backlog.md) du Jour 4
+- **Version :** 1.0 — figée au Jour 4 (tag `spec-v1.0`), alignée sur le [Product Backlog](backlog.md) ; toute modification ultérieure est consignée en section 12
 - **Date :** 2026-10-11
 - **Auteur :** Khadija
 - **Documents de référence :** [VISION.md](../VISION.md), [ADR-001](adr/001-choix-techniques.md)
@@ -147,12 +147,13 @@ Priorités MoSCoW : **Must** (indispensable au MVP), **Should** (important, à l
 |----|----------|----------|-------------------------|
 | BF-33 | Chaque appel est enregistré dans un historique : date, file, agent, temps d'attente, durée, issue (traité ou abandonné). | Must | Tout appel terminé apparaît dans l'historique avec tous ces champs renseignés. |
 | BF-34 | Le superviseur filtre l'historique par période, file, agent et issue. | Should | Chaque filtre ne renvoie que les appels qui correspondent. |
-| BF-35 | Statistiques par agent : nombre d'appels traités, durée moyenne de traitement, taux d'occupation. | Must | Sur un jeu d'appels connu, les valeurs affichées sont égales aux valeurs calculées à la main. |
+| BF-35 | Statistiques par agent : nombre d'appels traités, durée moyenne de traitement, taux d'occupation instantané (RG-45). | Must | Sur un jeu d'appels connu, les valeurs affichées sont égales aux valeurs calculées à la main ; le taux d'occupation est celui de RG-45 pour les statuts au moment de l'affichage. |
 | BF-36 | Statistiques par équipe : mêmes indicateurs agrégés au niveau de l'équipe. | Should | L'agrégat d'une équipe est cohérent avec la somme ou la moyenne de ses agents. |
 | BF-37 | Statistiques par période (jour, semaine) pour chaque file : volume, temps d'attente moyen, taux d'abandon, taux SLA. | Should | Les valeurs d'une période correspondent aux appels de cette période dans l'historique. |
 | BF-38 | Export de l'historique et des statistiques au format CSV. | Won't | Écarté : n'apporte rien aux objectifs du projet. |
 | BF-39 | Graphiques d'évolution (volume d'appels, temps d'attente, SLA) sur la période choisie. | Could | Les points du graphique correspondent aux valeurs du tableau de statistiques. |
 | BF-45 | L'agent consulte ses propres statistiques (appels traités, durée moyenne, taux d'occupation). | Could (hors MVP) | Les valeurs affichées à l'agent sont égales à celles de BF-35 pour cet agent, et il ne voit celles d'aucun autre agent. |
+| BF-49 | Taux d'occupation sur une période, calculé à partir de l'historique des statuts (RG-09) : temps « En communication » / (temps « Disponible » + temps « En communication »), par agent et par équipe. | Could | Sur un historique de statuts connu, le taux affiché est égal au taux calculé à la main, en ne comptant que la partie de chaque statut comprise dans la période. |
 
 ### 4.7 Traçabilité objectifs → exigences
 
@@ -162,7 +163,7 @@ Priorités MoSCoW : **Must** (indispensable au MVP), **Should** (important, à l
 | OBJ-02 | BF-12, BF-13, BF-17, BF-18, BF-19, BF-40, BF-41, BF-47, BF-48 |
 | OBJ-03 | BF-28, BF-29, BF-30, BF-31, BF-42 |
 | OBJ-04 | BF-07, BF-08, BF-09, BF-27, BF-46 |
-| OBJ-05 | BF-33, BF-34, BF-35, BF-36, BF-37, BF-45 |
+| OBJ-05 | BF-33, BF-34, BF-35, BF-36, BF-37, BF-45, BF-49 |
 | OBJ-06 | BF-03, BF-12, BF-13, BF-28, BF-43, BF-44 |
 | OBJ-T01 à OBJ-T06 | Couverts par les exigences non fonctionnelles (section 5) |
 
@@ -170,7 +171,7 @@ Priorités MoSCoW : **Must** (indispensable au MVP), **Should** (important, à l
 
 Toutes les BNF sont de priorité Must, sauf les exceptions décidées au Jour 4 (voir le [Product Backlog](backlog.md), section 6) :
 
-- **Should :** BNF-10 (scan OWASP ZAP) et BNF-26 (purge à 90 jours).
+- **Should :** BNF-10 (scan OWASP ZAP), BNF-26 (purge à 90 jours) et BNF-31 (HTTPS en production).
 - **Could :** la collecte des logs dans Loki (partie de BNF-20 ; les logs JSON avec identifiant de corrélation restent Must) et les tests Playwright cités comme méthode de vérification de BNF-01, BNF-13, BNF-24 et BNF-25 ; à défaut, BNF-01 est vérifiée par l'histogramme Prometheus, et BNF-13, BNF-24 et BNF-25 par un test manuel consigné.
 
 Charge nominale de référence : 100 agents connectés, 5 superviseurs, générateur à 2 appels par seconde.
@@ -181,7 +182,7 @@ Charge nominale de référence : 100 agents connectés, 5 superviseurs, généra
 | BNF-02 | Performance | Le temps de réponse de l'API est inférieur à 300 ms au 95e percentile, sous charge nominale. | Seuil k6 `http_req_duration: p(95)<300` dans le pipeline nocturne (non bloquant pour les push, BNF-29). |
 | BNF-03 | Performance | Quand un agent éligible existe, un appel passe « Affecté » en moins de 500 ms (95e percentile). Le délai est mesuré à partir de la création de l'appel si un agent éligible est déjà « Disponible », ou à partir du passage à « Disponible » de l'agent si l'appel attendait déjà. Les appels sans agent éligible ne sont pas mesurés. | Métrique Prometheus du délai d'affectation (instant de départ défini ci-contre → passage « Affecté »), vérifiée pendant le test de charge. |
 | BNF-04 | Capacité | Test de marge (5 × la charge nominale) : le système supporte 500 utilisateurs simulés simultanés pendant 10 minutes, avec un taux d'erreur inférieur à 1 % et un p95 API inférieur à 500 ms. | Scénario k6 à 500 utilisateurs virtuels dans le pipeline nocturne ; seuils `http_req_failed: rate<0.01` et `http_req_duration: p(95)<500`. |
-| BNF-05 | Sécurité | Toutes les routes de l'API, sauf la connexion et les sondes de santé, exigent un jeton JWT valide ; la durée de vie du jeton est au plus de 60 minutes. | Tests d'intégration : sans jeton ou avec un jeton expiré, l'API répond 401. |
+| BNF-05 | Sécurité | Toutes les routes de l'API, sauf la connexion, les sondes de santé et `/metrics`, exigent un jeton JWT valide ; la durée de vie du jeton est au plus de 60 minutes. `/metrics` est exposé sur un port interne secondaire, non routé par l'Ingress ; dans Compose, ce port n'est pas publié ; dans Kubernetes, une NetworkPolicy n'autorise que le namespace de supervision. | Tests d'intégration : sans jeton ou avec un jeton expiré, l'API répond 401. `/metrics` est injoignable par l'Ingress, depuis le poste avec Compose et depuis un pod hors du namespace de supervision (CNI qui applique les NetworkPolicy : Calico sur kind, ou k3s). |
 | BNF-06 | Sécurité | Les mots de passe sont stockés uniquement sous forme hachée et salée (PBKDF2 via ASP.NET Core Identity, ou bcrypt). | Test d'intégration vérifiant qu'aucun mot de passe en clair n'est présent en base ; revue de code. |
 | BNF-07 | Sécurité | Le contrôle d'accès est fondé sur les rôles (RBAC) : chaque route déclare les rôles autorisés, et un rôle non autorisé reçoit 403. | Matrice de tests automatisés rôle × route : 100 % des routes couvertes. |
 | BNF-08 | Sécurité | Aucun secret (mot de passe, clé, jeton) n'est présent dans le dépôt Git. | Étape gitleaks dans le pipeline : 0 détection, sinon le pipeline échoue. |
@@ -206,6 +207,8 @@ Charge nominale de référence : 100 agents connectés, 5 superviseurs, généra
 | BNF-27 | Observabilité | Alertmanager émet une alerte si l'API est injoignable pendant plus de 1 minute. | Règle Prometheus `up{job="api"} == 0` avec `for: 1m` ; arrêter l'API pendant 2 minutes (`docker stop` ou mise à l'échelle à 0 réplica) : l'alerte est émise ; l'arrêter 30 s : aucune alerte. |
 | BNF-28 | Données | Tous les horodatages sont enregistrés en UTC (type PostgreSQL `timestamptz`). | Test d'intégration : un horodatage écrit puis relu depuis une session configurée dans un autre fuseau désigne le même instant ; revue du schéma : aucune colonne `timestamp` sans fuseau. |
 | BNF-29 | Livraison continue | Un push sur `main` déclenche automatiquement le build, les tests et le déploiement sur l'environnement de test, terminés en moins de 15 minutes ; le pipeline d'une pull request (build, tests, analyses) se termine en moins de 10 minutes ; les tests de charge k6 s'exécutent dans un pipeline nocturne et ne bloquent pas les push. | Horodater le push et la fin du déploiement (release Helm de l'environnement de test saine, ou application ArgoCD synchronisée et saine si ArgoCD est livré) ; horodater le début et la fin du pipeline d'une pull request ; le pipeline échoue si une étape échoue. |
+| BNF-30 | Livraison continue | Une version déployée peut être remplacée par la version précédente en moins de 5 minutes avec `helm rollback` (OBJ-T02, LIV-12). | Déployer v2 puis revenir à v1 avec `helm rollback` : chronométrer jusqu'à ce que v1 soit saine. |
+| BNF-31 | Sécurité | En production, le trafic est servi en HTTPS avec un certificat valide, et une requête HTTP est redirigée vers HTTPS (OBJ-T02, LIV-12). | `curl` en HTTPS réussit sans `--insecure` (certificat émis par cert-manager, autorité locale reconnue par le poste) ; une requête HTTP reçoit une redirection vers HTTPS. |
 
 ## 6. Acteurs
 
@@ -400,6 +403,12 @@ Cas limites à tester : 40 / 50 = 80 % → vert (borne incluse) ; 35 / 50 = 70 %
 | RG-43 | Sinon, la suppression est logique : la file est désactivée et ses appels restent dans l'historique et dans les statistiques. | BF-13, BF-33 |
 | RG-44 | Une file désactivée refuse tout nouvel appel : le générateur ne lui en crée plus, et toute création d'appel vers cette file est refusée. | BF-13, BF-15 |
 
+### 7.8 Statistiques
+
+| ID | Règle | BF liées |
+|----|-------|----------|
+| RG-45 | Le taux d'occupation est un taux instantané, calculé sur l'ensemble d'agents considéré (centre, équipe ou agent) : nombre d'agents « En communication » / (nombre d'agents « Disponible » + nombre d'agents « En communication ») × 100. Les agents « En pause » et « Hors ligne » sont exclus. Si le dénominateur vaut 0, le taux affiché est « N/A ». Pour un agent seul, il vaut donc 100 % (« En communication »), 0 % (« Disponible ») ou « N/A » (« En pause » ou « Hors ligne ») ; le taux sur une période relève de BF-49 (Could). | BF-35, BF-36 |
+
 ## 8. Contraintes
 
 | ID | Domaine | Contrainte |
@@ -416,20 +425,33 @@ Cas limites à tester : 40 / 50 = 80 % → vert (borne incluse) ; 35 / 50 = 70 %
 
 ## 9. Livrables
 
+### 9.1 MVP (Must et Should)
+
 | ID | Livrable | Contenu | Exigences liées |
 |----|----------|---------|-----------------|
 | LIV-01 | Documentation de cadrage | `VISION.md`, cahier des charges, ADR (`docs/adr/`), journal de projet | BNF-16 |
 | LIV-02 | Product Backlog | Épopées, user stories, priorités MoSCoW | Sections 4 et 7 |
 | LIV-03 | Code source | Backend, frontend et générateur de trafic dans le dépôt Git | Sections 4 et 7 |
-| LIV-04 | Tests automatisés | Tests unitaires, d'intégration, de bout en bout et de charge | OBJ-T04, BNF-15 |
+| LIV-04 | Tests automatisés | Tests unitaires, d'intégration et de charge (les tests de bout en bout sont en LIV-13) | OBJ-T04, BNF-15 |
 | LIV-05 | Conteneurisation | Dockerfiles et `docker-compose.yml` | OBJ-T02, BNF-17 |
-| LIV-06 | Pipeline CI/CD | `Jenkinsfile`, configuration Jenkins as code, workflow GitHub Actions | OBJ-T01, BNF-08, BNF-09, BNF-22 |
-| LIV-07 | Déploiement Kubernetes | Chart Helm, application ArgoCD | OBJ-T02, OBJ-T06, BNF-18 |
+| LIV-06 | Pipeline CI/CD | `Jenkinsfile`, configuration Jenkins as code, déploiement automatique sur l'environnement de test (le workflow GitHub Actions est en LIV-16) | OBJ-T01, BNF-08, BNF-09, BNF-22, BNF-29 |
+| LIV-07 | Déploiement Kubernetes | Chart Helm et procédure de retour arrière (l'application ArgoCD est en LIV-14) | OBJ-T02, BNF-18, BNF-30 |
 | LIV-08 | Infrastructure as code | Playbooks Ansible | OBJ-T06 |
-| LIV-09 | Supervision | Configuration Prometheus, tableaux de bord Grafana versionnés, règles Alertmanager, collecte Loki | OBJ-T03, BNF-19 à BNF-21 |
+| LIV-09 | Supervision | Configuration Prometheus, tableaux de bord Grafana versionnés, règles Alertmanager (la collecte Loki est en LIV-15) | OBJ-T03, BNF-19, BNF-21, BNF-27 |
 | LIV-10 | Rapports qualité et sécurité | Rapports SonarQube, Trivy, OWASP ZAP et k6 produits par le pipeline | BNF-02, BNF-04, BNF-09, BNF-10, BNF-22 |
-| LIV-11 | Documentation d'installation et d'exploitation | `README.md` : prérequis, lancement local, déploiement, réaction aux alertes | BNF-17, BNF-18 |
-| LIV-12 | Démonstration finale | Démonstration de bout en bout : commit → pipeline → déploiement → métriques → alerte | Section 10 |
+| LIV-11 | Documentation d'installation et d'exploitation | `README.md` : prérequis, lancement local, déploiement, retour arrière, réaction aux alertes | BNF-17, BNF-18, BNF-30 |
+| LIV-12 | Démonstration finale | Démonstration de bout en bout : commit → pipeline → déploiement → métriques → alerte | Section 10, OBJ-T02, BNF-30, BNF-31 |
+
+### 9.2 Optionnels (Could)
+
+Livrés seulement s'il reste du temps (Product Backlog, section 6.3). Aucun critère d'acceptation global (section 10) n'en dépend.
+
+| ID | Livrable | Contenu | Exigences liées |
+|----|----------|---------|-----------------|
+| LIV-13 | Tests de bout en bout | Tests Playwright sur Chromium et Firefox (partie retirée de LIV-04) | OBJ-T04, BNF-01, BNF-13, BNF-24, BNF-25 |
+| LIV-14 | Déploiement GitOps | Application ArgoCD (partie retirée de LIV-07) | OBJ-T06, BNF-29 |
+| LIV-15 | Collecte des logs | Loki et son agent de collecte (partie retirée de LIV-09) | OBJ-T03, BNF-20 |
+| LIV-16 | Pipeline de comparaison | Workflow GitHub Actions (partie retirée de LIV-06) | CT-01 |
 
 ## 10. Critères d'acceptation globaux
 
@@ -439,14 +461,16 @@ Le projet est accepté lorsque chaque critère est coché (oui / non) :
 - [ ] Un changement de statut d'agent apparaît sur le tableau de bord superviseur en moins de 1 s, sans rafraîchir la page (BNF-01, BF-25).
 - [ ] Un appel créé par le générateur est affecté à un agent « Disponible » qui possède la compétence requise et appartient à l'équipe de la file (RG-18, BF-17).
 - [ ] Le taux SLA affiché pour une file, ainsi que sa couleur, correspondent au calcul manuel sur un jeu d'appels de test qui couvre l'exemple et les cas limites de la section 7.6 (RG-29 à RG-35, BF-29).
-- [ ] Un push sur `main` déclenche automatiquement le build, les tests et le déploiement, dans la durée fixée par BNF-29 (OBJ-T01, OBJ-T06).
+- [ ] Un push sur `main` déclenche automatiquement, par Jenkins et Helm, le build, les tests et le déploiement sur l'environnement de test, en moins de 15 minutes (BNF-29, US-68 du Product Backlog).
 - [ ] Une API injoignable pendant plus de 1 minute (`docker stop` ou mise à l'échelle à 0 réplica) déclenche une alerte dans Alertmanager (BNF-27).
 
-## 11. Points ouverts (revue du Jour 3)
+Aucun critère ne dépend d'un élément Could : sans Playwright, le critère BNF-01 se vérifie par l'histogramme Prometheus (section 5), et le déploiement ne dépend pas d'ArgoCD.
 
-Écarts relevés pendant la revue de cohérence. Les décisions provisoires sont signalées ; elles seront confirmées ou corrigées au Jour 4 (Product Backlog).
+## 11. Décisions du Jour 3, confirmées au Jour 4
 
-| # | Point | Décision provisoire |
+Écarts relevés pendant la revue de cohérence du Jour 3, et décisions prises ; elles ont été confirmées ou complétées au Jour 4 (Product Backlog). Les points 10 et 13 restent hors MVP.
+
+| # | Point | Décision |
 |---|-------|---------------------|
 | 1 | Les priorités de file (RG-26 à RG-28) et la fenêtre glissante du SLA (RG-33) n'ont pas de BF dédiée en partie 1. | **Résolu :** BF-41 et BF-42 ajoutées. |
 | 2 | Une réévaluation « toutes les secondes » seule ne permet pas de respecter BNF-03 (affectation en moins de 500 ms). | **Résolu :** affectation par événement avec cycle de sécurité (RG-24), absence de double affectation (RG-37), mesure définie dans BNF-03. |
@@ -464,11 +488,20 @@ Le projet est accepté lorsque chaque critère est coché (oui / non) :
 | 14 | RG-41 (journal des modifications des paramètres SLA) n'a pas de BF ni de BNF source : BF-28 ne parle pas d'audit. | **Résolu :** BF-43. |
 | 15 | RG-38 : le stockage des horodatages en UTC (`timestamptz`) n'a pas de BNF source ; seule la journée SLA est couverte par BF-29. | **Résolu :** BNF-28. |
 | 16 | La patience P est paramétrable par file par l'administrateur (section 7.1, RG-15), mais BF-20 ne parle que d'une « patience simulée ». | **Résolu :** BF-20 complétée. |
-| 17 | Le critère d'acceptation « un push sur `main` déclenche build, tests et déploiement » ne s'appuie que sur des objectifs (OBJ-T01, OBJ-T06), pas sur une BNF. | **Résolu :** BNF-29 (durée `X minutes` à fixer). |
+| 17 | Le critère d'acceptation « un push sur `main` déclenche build, tests et déploiement » ne s'appuie que sur des objectifs (OBJ-T01, OBJ-T06), pas sur une BNF. | **Résolu :** BNF-29 ; durée fixée à 15 minutes au Jour 4 (point 22). |
 | 18 | L'accès en lecture seule de l'administrateur au tableau de bord et aux statistiques (matrice 6.2) n'est porté par aucune BF : BF-04 ne traite que le refus opposé à l'agent. | **Résolu :** BF-44. |
 | 19 | RG-02 (statut initial « Hors ligne ») et RG-07 (déconnexion différée pendant un appel) sont rattachées à BF-03, BF-08 et BF-02, mais ces BF n'énoncent pas ces comportements. | **Résolu :** BF-03 (statut initial) et BF-02 (déconnexion différée) complétées. |
 | 20 | BF-19 imposait deux stratégies en Must, alors que le second algorithme figure parmi les éléments à couper en premier en cas de retard. | **Résolu (Jour 4) :** BF-19 (Must) ne garde que la stratégie par défaut « agent inactif depuis le plus longtemps » ; « tour de rôle » devient BF-48 (Should), coupée en dernier car elle démontre le patron Strategy. |
 | 21 | Capacité insuffisante pour toutes les exigences Must et Should (backlog du Jour 4 : 170 points planifiés pour 154 points de capacité). | **Décision (Jour 4) :** BF-44 passe Could ; BNF-10 et BNF-26 passent Should ; Loki, Playwright et ArgoCD passent Could (section 5). Révision après le Sprint 1, avec la vélocité mesurée. |
 | 22 | BNF-29 : durée `X minutes` non fixée. | **Résolu (Jour 4) :** 15 min du push au déploiement sur l'environnement de test, 10 min pour une pull request, k6 en pipeline nocturne non bloquant. |
 | 23 | ArgoCD (OBJ-T06) et Playwright (OBJ-T04) sont désormais Could : ces deux objectifs ne sont plus garantis en totalité. | Accepté : déploiement automatique par Jenkins + Helm (Must) ; ArgoCD et Playwright livrés seulement s'il reste du temps. |
-| 24 | Le déploiement de production avec retour arrière (Must) et HTTPS (Should) n'ont pas d'exigence source ; BNF-05 n'exempte pas `/metrics` ; le taux d'occupation (BF-35) n'a pas de formule. | Ouvert : voir le Product Backlog, section 5.4. |
+| 24 | Le déploiement de production avec retour arrière (Must) et HTTPS (Should) n'ont pas d'exigence source ; BNF-05 n'exempte pas `/metrics` ; le taux d'occupation (BF-35) n'a pas de formule. | **Résolu (Jour 4, revue) :** BNF-30 (retour arrière en moins de 5 minutes, Must) et BNF-31 (HTTPS, Should) ajoutées ; BNF-05 exempte `/metrics`, exposé sur un port interne secondaire non routé par l'Ingress, non publié dans Compose et protégé par une NetworkPolicy dans Kubernetes ; occupation instantanée définie par RG-45, version sur une période en BF-49 (Could). |
+
+## 12. Historique des modifications
+
+| Date | Version | Modification | Raison |
+|------|---------|--------------|--------|
+| 2026-10-08 | 0.1 | Partie 1 : sections 1 à 5 (objectifs, périmètre, BF, BNF). | Jour 2 |
+| 2026-10-09 | 0.2 | Partie 2 : sections 6 à 11 ; corrections de revue (BF-41 à BF-47, BNF-27 à BNF-29, RG-37 à RG-44). | Jour 3 : revue de cohérence et de traçabilité |
+| 2026-10-11 | 0.3 | BF-19 scindée (BF-48 « tour de rôle », Should) ; BF-44 Could et matrice des droits ; BNF-10 et BNF-26 Should ; Loki, Playwright et ArgoCD Could ; BNF-29 fixée à 15 min (10 min pour une pull request). | Équilibrage du Product Backlog (Jour 4) |
+| 2026-10-11 | 1.0 | Section 11 renommée et point 17 clos ; livrables séparés en MVP et optionnels (LIV-13 à LIV-16) ; critère « push sur `main` » fondé sur Jenkins + Helm ; exception `/metrics` dans BNF-05 ; RG-45 (occupation instantanée) et BF-49 (occupation sur une période, Could) ; BNF-30 (retour arrière, Must) et BNF-31 (HTTPS, Should). Version figée (tag `spec-v1.0`). | Revue de fin du Jour 4 : textes obsolètes et décisions du point 24 |

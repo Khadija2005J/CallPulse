@@ -1,6 +1,6 @@
 # CallPulse — Product Backlog
 
-- **Version:** 0.2 (Day 4 decisions applied; see section 6.3)
+- **Version:** 0.3 (aligned with specification v1.0, tag `spec-v1.0`)
 - **Date:** 2026-10-11 (Day 4, Sprint 0)
 - **Author:** Khadija
 - **Sources:** [VISION.md](../VISION.md), [requirements specification](cahier-des-charges.md) (BF, BNF, RG IDs), [ADR-001](adr/001-choix-techniques.md)
@@ -120,6 +120,7 @@
 | US-66 | GitHub Actions comparison pipeline | E8 | Could | 2 | — |
 | US-67 | HTTPS with cert-manager | E8 | Should | 2 | Overflow |
 | US-68 | Deploy automatically to the test environment | E8 | Must | 3 | S5 |
+| US-69 | Period-based occupancy | E7 | Could | 3 | — |
 
 ## 4. Story details
 
@@ -602,13 +603,13 @@ As a **Supervisor**, I want to filter the history by period, queue, agent and ou
 #### US-43 — Agent statistics
 
 As a **Supervisor**, I want calls handled, average handling time and occupancy per agent so that I can coach my team.
-**E7 · Must · 3 pts · S4 · Sources:** BF-35
+**E7 · Must · 3 pts · S4 · Sources:** BF-35, RG-45
 
 1. **Given** an agent who handled 4 calls of 120, 180, 240 and 60 s in the period, **when** statistics are computed, **then** the count is 4 and the average handling time is 150 s.
-2. **Given** an agent with 2 h of Available + On call time, of which 1.5 h On call, **when** occupancy is computed, **then** it is 75 % *(proposed definition: On call / (Available + On call); the specification does not define occupancy)*.
-3. *(edge)* **Given** an agent with no call in the period, **when** statistics are computed, **then** the count is 0, and the average and occupancy show "—" instead of a division by zero.
+2. **Given** 6 Available, 3 On call, 2 On break and 1 Offline agents, **when** occupancy is computed, **then** it is 3 / (6 + 3) = 33.3 %, because agents On break or Offline are excluded (RG-45).
+3. *(edge)* **Given** a set of agents who are all On break or Offline, **when** occupancy is computed, **then** it shows "N/A" instead of a division by zero, and an agent with no call in the period shows a count of 0 and an average of "—".
 
-**Tasks:** queries on call history and status history · statistics page · tests on a known data set.
+**Tasks:** queries on call history · instantaneous occupancy from current statuses · statistics page · tests on a known data set.
 
 #### US-44 — Team and period statistics
 
@@ -653,6 +654,17 @@ As an **Agent**, I want to see my own statistics so that I can follow my perform
 3. *(edge)* **Given** an agent with no calls, **when** they open the page, **then** they see zeros and "—".
 
 **Tasks:** not planned.
+
+#### US-69 — Period-based occupancy
+
+As a **Supervisor**, I want occupancy computed over a period from the status history so that I can compare agents over a day or a week, not only at one instant.
+**E7 · Could · 3 pts · — · Sources:** BF-49, RG-09
+
+1. **Given** an agent with 1.5 h On call and 0.5 h Available in the period, **when** occupancy is computed from the status history, **then** it is 75 %.
+2. *(edge)* **Given** a status that started before the period, **when** occupancy is computed, **then** only the part of that status inside the period counts.
+3. *(edge)* **Given** an agent with no Available or On call time in the period, **when** occupancy is computed, **then** it shows "N/A".
+
+**Tasks:** interval query on the status history, clipped to the period · day boundaries in time zone Z.
 
 ### E8 — DevOps platform
 
@@ -769,13 +781,13 @@ As an **Ops engineer**, I want a Helm chart so that the application is deployed 
 #### US-58 — Prometheus metrics and Grafana dashboard
 
 As an **Ops engineer**, I want business and technical metrics in Grafana so that I see how the application behaves.
-**E8 · Must · 3 pts · S5 · Sources:** BNF-19, BNF-01, BNF-03, OBJ-T03
+**E8 · Must · 3 pts · S5 · Sources:** BNF-19, BNF-01, BNF-03, BNF-05, OBJ-T03
 
 1. **Given** a running API, **when** `/metrics` is scraped, **then** it exposes queue length, longest wait, SLA rate per queue, agents per status and HTTP request duration.
 2. **Given** the repository, **when** the stack starts, **then** the Grafana dashboard is provisioned from a versioned JSON file.
-3. *(edge)* **Given** a request to `/metrics` through the public entry point, **when** it is sent, **then** it is not served; scraping works only on the internal port *(proposed answer to the BNF-05 gap, see section 5.4)*.
+3. *(error)* **Given** `/metrics` on its internal port, **when** it is called through the Ingress, from the host with Compose, or from a pod outside the monitoring namespace, **then** it cannot be reached, while Prometheus still scrapes it (BNF-05).
 
-**Tasks:** prometheus-net · custom gauges and histograms (SignalR broadcast delay, assignment delay) · Prometheus and Grafana in Compose and Helm.
+**Tasks:** prometheus-net · custom gauges and histograms (SignalR broadcast delay, assignment delay) · second Kestrel port for `/metrics`, not published in Compose · NetworkPolicy (needs a CNI that enforces it: Calico on kind, or k3s) · Prometheus and Grafana in Compose and Helm.
 
 #### US-59 — Alertmanager rules (SLA, API down)
 
@@ -835,11 +847,11 @@ As an **Ops engineer**, I want an Ansible playbook that prepares the environment
 #### US-64 — Production deployment with rollback
 
 As an **Ops engineer**, I want a production deployment with a safe rollback so that the final demo is close to a real release.
-**E8 · Must · 3 pts · S6 · Sources:** OBJ-T02, LIV-12 — *no BF or BNF source (see section 5.4); HTTPS split into US-67 on Day 4*
+**E8 · Must · 3 pts · S6 · Sources:** BNF-30, OBJ-T02, LIV-12 — *HTTPS split into US-67 on Day 4*
 
 1. **Given** the production values, **when** the chart is installed in the production namespace, **then** all pods are Ready and the application answers through the Ingress.
 2. *(error)* **Given** a release whose pods never become Ready, **when** `helm upgrade --atomic` runs, **then** it rolls back automatically and the previous version keeps serving.
-3. **Given** a bad release that is already live, **when** `helm rollback` runs, **then** the previous version is restored and healthy in less than 5 minutes.
+3. **Given** v1 deployed and then v2, **when** `helm rollback` to v1 runs, **then** v1 is restored and healthy in less than 5 minutes (BNF-30).
 
 **Tasks:** Ingress controller · production values file · rollback runbook in the README.
 
@@ -868,9 +880,9 @@ As a **Developer**, I want a GitHub Actions workflow equal to the Jenkins CI so 
 #### US-67 — HTTPS with cert-manager
 
 As an **Ops engineer**, I want the production deployment served over HTTPS so that credentials and tokens never travel in clear text.
-**E8 · Should · 2 pts · Overflow · Sources:** OBJ-T02, LIV-12 — *split from US-64 on Day 4; no BF or BNF source*
+**E8 · Should · 2 pts · Overflow · Sources:** BNF-31, OBJ-T02, LIV-12 — *split from US-64 on Day 4*
 
-1. **Given** cert-manager with a local CA issuer, **when** the production chart is installed, **then** a certificate is issued and the application is served over HTTPS.
+1. **Given** cert-manager with a local CA issuer, **when** the production chart is installed, **then** a certificate is issued, and the application is served over HTTPS with a certificate the workstation trusts (`curl` succeeds without `--insecure`).
 2. **Given** an HTTP request, **when** it reaches the Ingress, **then** it is redirected to HTTPS.
 3. *(error)* **Given** a misconfigured issuer, **when** the certificate is requested, **then** its status is not Ready with a readable reason, and the post-deploy smoke test fails.
 
@@ -891,7 +903,7 @@ As an **Ops engineer**, I want every successful build of `main` deployed to the 
 
 ### 5.1 Functional requirements → stories
 
-Priorities are those of specification version 0.3, which was aligned with this backlog on Day 4.
+Priorities are those of specification version 1.0, which was aligned with this backlog on Day 4.
 
 | BF | Spec priority | Stories | Note |
 |----|---------------|---------|------|
@@ -929,7 +941,7 @@ Priorities are those of specification version 0.3, which was aligned with this b
 | BF-32 | Could | US-40 | |
 | BF-33 | Must | US-19, US-41 | |
 | BF-34 | Should | US-42 | Overflow |
-| BF-35 | Must | US-43 | ⚠ Occupancy not defined in the spec |
+| BF-35 | Must | US-43 | Instantaneous occupancy (RG-45) |
 | BF-36 | Should | US-44 | Overflow |
 | BF-37 | Should | US-44 | Overflow |
 | BF-38 | Won't | — | Excluded on purpose |
@@ -943,6 +955,7 @@ Priorities are those of specification version 0.3, which was aligned with this b
 | BF-46 | Could (out of MVP) | US-16 | Not planned |
 | BF-47 | Could (out of MVP) | US-26 | Not planned |
 | BF-48 | Should | US-22 | Round robin, new on Day 4, cut last |
+| BF-49 | Could | US-69 | Period-based occupancy, new in spec v1.0 |
 
 ### 5.2 Non-functional requirements → stories
 
@@ -952,7 +965,7 @@ Priorities are those of specification version 0.3, which was aligned with this b
 | BNF-02 | API p95 < 300 ms | Must | US-55 | Nightly, does not block pushes |
 | BNF-03 | Assignment < 500 ms | Must | US-23, US-55, US-58 | |
 | BNF-04 | 500-user headroom test | Must | US-55 | Nightly |
-| BNF-05 | JWT on every route, ≤ 60 min | Must | US-01, US-03, US-27 | ⚠ `/metrics` is not in the exceptions (5.4) |
+| BNF-05 | JWT on every route, ≤ 60 min | Must | US-01, US-03, US-27, US-58 | `/metrics` exempted on an internal port (US-58) |
 | BNF-06 | Hashed passwords | Must | US-01 | |
 | BNF-07 | RBAC, 403 | Must | US-03, US-27 | |
 | BNF-08 | No secret in Git | Must | US-51 | |
@@ -977,6 +990,8 @@ Priorities are those of specification version 0.3, which was aligned with this b
 | BNF-27 | API-down alert | Must | US-59 | |
 | BNF-28 | UTC timestamps | Must | US-13, US-35, US-54 | |
 | BNF-29 | 15 min push to deploy, 10 min PR | Must | US-51, US-68, US-65 (Could) | Met by Jenkins + Helm without ArgoCD |
+| BNF-30 | Rollback < 5 min with `helm rollback` | Must | US-64 | New in spec v1.0 |
+| BNF-31 | HTTPS in production | Should | US-67 | New in spec v1.0; Overflow |
 
 ### 5.3 Business rules → stories
 
@@ -996,9 +1011,9 @@ Priorities are those of specification version 0.3, which was aligned with this b
 | RG-12 | US-17 | RG-27 | US-10 | RG-42 | US-09 |
 | RG-13 | US-19 | RG-28 | US-10 | RG-43 | US-09 |
 | RG-14 | US-19 | RG-29 | US-35 | RG-44 | US-09, US-17 |
-| RG-15 | US-24 | RG-30 | US-35 | | |
+| RG-15 | US-24 | RG-30 | US-35 | RG-45 | US-43 |
 
-All 44 RG are covered.
+All 45 RG are covered.
 
 ### 5.4 Gaps
 
@@ -1009,9 +1024,9 @@ All 44 RG are covered.
 | 3 | BNF-24 (browser support) is covered only by a Could story (US-56). | Open: a manual check on Chrome, Edge and Firefox goes in the release checklist (Day 5 Definition of Done). |
 | 4 | BNF-29 depended on ArgoCD and X was undefined. | **Closed:** X = 15 min (10 min for pull requests), met by US-51 and US-68. |
 | 5 | US-63 (Ansible) and US-66 (GitHub Actions) come only from objectives and deliverables (OBJ-T06, LIV-08, CT-01, LIV-06). | Accepted: both are outside the Must set. |
-| 6 | US-64 (production and rollback, Must) and US-67 (HTTPS, Should) have no BF or BNF source. They come from the planning (S6), OBJ-T02 and LIV-12. | Open: add BNF entries to the specification, or accept that objectives are their source. |
-| 7 | BNF-05 requires a JWT on every route except login and health, but Prometheus scrapes `/metrics` without a token. | Open: add `/metrics` (internal port only) to the BNF-05 exceptions before S5. |
-| 8 | BF-35 "occupancy" has no formula in the specification. | Open: adopt On call / (Available + On call) in section 7 before S4. |
+| 6 | US-64 (production and rollback, Must) and US-67 (HTTPS, Should) had no BF or BNF source. | **Closed:** BNF-30 (rollback, Must) and BNF-31 (HTTPS, Should) added in spec v1.0, linked to OBJ-T02 and LIV-12. |
+| 7 | BNF-05 required a JWT on every route except login and health, but Prometheus scrapes `/metrics` without a token. | **Closed:** BNF-05 exempts `/metrics` on a secondary internal port (not routed by the Ingress, not published in Compose, NetworkPolicy in Kubernetes). kind's default CNI does not enforce NetworkPolicy: use Calico on kind, or k3s. |
+| 8 | BF-35 "occupancy" had no formula in the specification. | **Closed:** RG-45 defines an instantaneous rate (agents On call / (Available + On call), N/A when 0). The period-based version is BF-49 / US-69 (Could). |
 | 9 | BF-06 does not give the failure count or lockout length. | Could: 5 failures and 15 min (Identity defaults) if it is ever planned. |
 | 10 | The Day 4 outline says "agents with skill levels", but levels exist only in BF-40 (Could). | Levels moved to US-25. MVP agents have skills without levels. |
 | 11 | US-24 (abandon, S5) comes after the SLA rate (US-35, S4). Until S5, SLA rates contain no abandoned calls (RG-31). | Accepted: the SLA tests use data sets with abandoned calls inserted directly. |
@@ -1028,9 +1043,9 @@ All 44 RG are covered.
 | Should in a sprint | 8 | 20 |
 | Should in Overflow | 9 | 21 |
 | **Must + Should** | **55** | **170** |
-| Could (no sprint) | 10 | 26 |
+| Could (no sprint) | 11 | 29 |
 | Could (out of MVP) | 3 | 7 |
-| **Whole backlog** | **68** | **203** |
+| **Whole backlog** | **69** | **206** |
 
 | Epic | Points (whole backlog) |
 |------|-------:|
@@ -1040,7 +1055,7 @@ All 44 RG are covered.
 | E4 Calls and routing | 33 |
 | E5 Real-time supervision | 20 |
 | E6 SLA and alerts | 19 |
-| E7 Statistics and history | 18 |
+| E7 Statistics and history | 21 |
 | E8 DevOps platform | 64 |
 
 ### 6.2 Points per sprint
