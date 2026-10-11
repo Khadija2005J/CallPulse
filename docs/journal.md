@@ -131,6 +131,20 @@ Traceability: every RG and every acceptance criterion now cites a BF or BNF (47 
 - Define the occupancy formula (BF-35) in section 7 before S4.
 - Decide whether production/rollback and HTTPS need their own BNF.
 
+### Addendum — review fixes (same day)
+
+Review of the specification after the backlog, committed as `docs: align specification and backlog after review`.
+
+Decisions taken:
+
+- **`/metrics` exception:** BNF-05 now exempts `/metrics`. It is exposed on a secondary internal port that the Ingress does not route; Compose does not publish it; in Kubernetes a NetworkPolicy allows only the monitoring namespace. kind's default CNI does not enforce NetworkPolicy, so S5 needs Calico on kind, or k3s.
+- **Occupancy formula (RG-45):** instantaneous rate = agents On call / (agents Available + agents On call). Agents On break and Offline are excluded, and the rate shows "N/A" when the denominator is 0. For a single agent it is therefore 100 %, 0 % or N/A. A period-based version computed from the status history is a Could item (BF-49, US-69).
+- **Rollback and HTTPS requirements:** BNF-30 (Must): rollback to the previous version in under 5 minutes with `helm rollback`, verified by deploying v2 and then rolling back to v1. BNF-31 (Should): production traffic over HTTPS with a valid certificate. Both are linked to OBJ-T02 and LIV-12, and they are the sources of US-64 and US-67.
+- **Outdated text fixed:** section 11 renamed and point 17 closed; deliverables split into MVP and optional (Playwright, ArgoCD, Loki and GitHub Actions moved to LIV-13 to LIV-16, while the Helm chart and Prometheus/Grafana stay MVP); the "push to main" acceptance criterion now relies on Jenkins + Helm (US-68, BNF-29). No global acceptance criterion depends on a Could item.
+- **Specification frozen at v1.0:** tag `spec-v1.0`. Any later change goes into the change log (section 12).
+
+Traceability after the fixes: 49 BF, 31 BNF and 45 RG. Only BF-21 and BF-38 (Won't) and BNF-16 (Definition of Done) have no story. The backlog has 69 stories and 206 points, and the sprint plan is unchanged.
+
 ### Tomorrow — Day 5
 
 - Sprint breakdown of S1 into tasks.
