@@ -100,3 +100,40 @@ Traceability: every RG and every acceptance criterion now cites a BF or BNF (47 
 
 - Product Backlog: epics, user stories with acceptance criteria, MoSCoW priorities.
 - Turn the open points of section 11 into backlog items or decisions (missing BF for queue priority and SLA window, API-down alert BNF, time zone, queue deletion).
+
+## Day 4 — 2026-10-11 (Sprint 0, pre-project)
+
+### Done
+
+- Wrote `docs/backlog.md`: 8 epics, 68 user stories, each with 3 Given/When/Then acceptance criteria (at least one error or edge case), a Fibonacci estimate, a MoSCoW priority, a target sprint and its source requirements.
+- Traceability: every BF and BNF maps to stories, and all 44 RG are covered. Gaps are listed instead of hidden: BF-21 and BF-38 (Won't), BNF-16 (no story, goes to the Definition of Done), and stories with no BF/BNF source (US-63, US-64, US-66, US-67).
+- Balance check: the first draft had 179 Must + Should points for a capacity of 154, Must at 86 %, and S2/S3/S4 overloaded. The problems were reported and then decided, not fixed silently.
+- Aligned the specification (version 0.3, separate commit): BF-19 split into BF-19 (default strategy, Must) and BF-48 (round robin, Should), BF-44 Could, rights matrix updated, BNF-10/26 Should, BNF-29 fixed, section 11 points 20 to 24.
+
+### Decisions
+
+- Estimation: 1 point ≈ 1 hour of focused work and 28 points per 2-week sprint (154 in total). To be reviewed after Sprint 1 with the measured velocity.
+- Reference story: US-07 "Manage teams and skills" (3 pts, plain CRUD) instead of US-11, which depends on the status state machine.
+- Never cut: Docker, Jenkins, basic Kubernetes, Prometheus/Grafana. Cut first: ArgoCD, Loki, Playwright (now Could), then ZAP, purge and HTTPS (Should, in Overflow). Round robin stays Should and is cut last, because it demonstrates the Strategy pattern.
+- Production deployment and rollback stay Must. HTTPS with cert-manager is a separate Should story.
+- The administrator's read-only dashboard (BF-44) becomes Could.
+- BNF-29: 15 min from push to deployed on the test environment, 10 min for pull-request builds, and k6 runs nightly without blocking pushes. A new Must story (US-68) makes Jenkins deploy with Helm, so ArgoCD is not needed for this target.
+- Result: Must 129, Should 41 (20 planned, 21 in Overflow), sprints within capacity (149 / 154 planned).
+
+### Difficulties
+
+- The specification's own Must set is about 84 % of capacity. The 70 % target cannot be reached without cutting core MVP functions, so this is an accepted risk to review after Sprint 1.
+- The cut-first items (round robin, Loki, ArgoCD, Playwright) contradicted Must requirements in the specification. Solved by updating the specification instead of letting the two documents disagree.
+
+### Open points
+
+- Add `/metrics` (internal port) to the BNF-05 exceptions before S5.
+- Define the occupancy formula (BF-35) in section 7 before S4.
+- Decide whether production/rollback and HTTPS need their own BNF.
+
+### Tomorrow — Day 5
+
+- Sprint breakdown of S1 into tasks.
+- Definition of Done (including an ADR for each structuring choice, BNF-16, and a manual browser check, BNF-24).
+- GitHub repository and project board.
+- Branching strategy and commit conventions.
