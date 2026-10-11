@@ -1,7 +1,7 @@
 # CallPulse — Cahier des charges
 
-- **Version :** 0.2 (brouillon) — partie 1 (sections 1 à 5) et partie 2 (sections 6 à 11)
-- **Date :** 2026-10-09
+- **Version :** 0.3 (brouillon) — partie 1 (sections 1 à 5) et partie 2 (sections 6 à 11), alignée sur le [Product Backlog](backlog.md) du Jour 4
+- **Date :** 2026-10-11
 - **Auteur :** Khadija
 - **Documents de référence :** [VISION.md](../VISION.md), [ADR-001](adr/001-choix-techniques.md)
 
@@ -109,12 +109,13 @@ Priorités MoSCoW : **Must** (indispensable au MVP), **Should** (important, à l
 | BF-16 | L'administrateur démarre, arrête et reparamètre le générateur sans redémarrer l'application. | Should | Une modification du débit est appliquée en moins de 10 s, sans redémarrage. |
 | BF-17 | Un appel entrant est affecté automatiquement à un agent « Disponible » qui possède la compétence requise par la file. | Must | Sur un échantillon de 100 appels affectés, 100 % le sont à un agent qui a la compétence requise. |
 | BF-18 | Si aucun agent compétent n'est disponible, l'appel reste en attente dans sa file jusqu'à ce qu'un agent compétent se libère. | Must | Avec 0 agent compétent disponible, l'appel reste en attente ; dès qu'un agent compétent passe « Disponible », l'appel lui est affecté. |
-| BF-19 | La stratégie de routage est configurable par file, avec deux stratégies : « agent inactif depuis le plus longtemps » (stratégie par défaut) et « tour de rôle ». | Must | Deux files configurées avec des stratégies différentes répartissent les appels selon leur stratégie respective, vérifiable par un test automatisé ; une nouvelle file utilise par défaut « agent inactif depuis le plus longtemps ». |
+| BF-19 | Parmi les agents éligibles, l'agent choisi est déterminé par la stratégie de routage de la file (patron Strategy, stratégie créée par une Factory) ; la stratégie par défaut, et seule stratégie Must, est « agent inactif depuis le plus longtemps ». | Must | Une nouvelle file utilise « agent inactif depuis le plus longtemps » ; avec deux agents éligibles, l'appel est affecté à celui dont le dernier passage à « Disponible » est le plus ancien, vérifiable par un test automatisé. |
 | BF-20 | Le générateur simule l'abandon d'un appel quand le client attend trop longtemps ; l'administrateur configure la patience maximale de chaque file (valeur par défaut : section 7.1). | Should | Un appel dont l'attente atteint la patience de sa file est marqué « Abandonné » et retiré de la file ; une patience modifiée par l'administrateur s'applique aux appels suivants. |
 | BF-21 | Le superviseur réaffecte manuellement un appel en attente à un agent donné. | Won't | Écarté : risque de conflit avec le routage automatique. |
 | BF-40 | Stratégie de routage supplémentaire « agent le plus compétent », fondée sur un niveau de compétence par agent. | Could | Avec deux agents disponibles de niveaux différents, l'appel est affecté à l'agent de niveau le plus élevé. |
 | BF-41 | L'administrateur définit la priorité de chaque file, de 1 (haute) à 3 (basse) ; un agent éligible pour plusieurs files reçoit d'abord les appels de la file la plus prioritaire. | Should | Avec un seul agent disponible, éligible pour deux files de priorités 1 et 2 qui ont chacune un appel en attente, l'agent reçoit l'appel de la file de priorité 1. |
 | BF-47 | Marqueur « VIP » sur un appel, qui le fait passer devant les autres appels de sa file. | Could (hors MVP) | Un appel VIP arrivé après d'autres appels de la même file leur est affecté en premier. |
+| BF-48 | L'administrateur choisit pour une file une seconde stratégie de routage, « tour de rôle », à la place de la stratégie par défaut (BF-19). | Should | Deux files configurées avec des stratégies différentes répartissent les appels selon leur stratégie respective, vérifiable par un test automatisé. |
 
 ### 4.4 Supervision en temps réel
 
@@ -126,7 +127,7 @@ Priorités MoSCoW : **Must** (indispensable au MVP), **Should** (important, à l
 | BF-25 | Le tableau de bord se met à jour automatiquement, sans rafraîchir la page. | Must | Un changement de statut ou un nouvel appel apparaît sans action de l'utilisateur. |
 | BF-26 | Le superviseur filtre le tableau de bord par équipe et par file. | Should | Avec un filtre actif, seuls les agents et files concernés sont affichés. |
 | BF-27 | Le superviseur force le statut d'un agent (par exemple « Hors ligne » pour un agent parti sans se déconnecter). | Should | Le statut forcé est appliqué et l'agent en est informé sur son écran. |
-| BF-44 | L'administrateur consulte le tableau de bord et les statistiques en lecture seule. | Should | L'administrateur voit le tableau de bord et les statistiques, mais toute tentative de forcer un statut reçoit un refus d'accès. |
+| BF-44 | L'administrateur consulte le tableau de bord et les statistiques en lecture seule. | Could | L'administrateur voit le tableau de bord et les statistiques, mais toute tentative de forcer un statut reçoit un refus d'accès. |
 
 ### 4.5 SLA
 
@@ -158,7 +159,7 @@ Priorités MoSCoW : **Must** (indispensable au MVP), **Should** (important, à l
 | Objectif | Exigences qui le couvrent |
 |----------|---------------------------|
 | OBJ-01 | BF-22, BF-23, BF-24, BF-25 |
-| OBJ-02 | BF-12, BF-13, BF-17, BF-18, BF-19, BF-40, BF-41, BF-47 |
+| OBJ-02 | BF-12, BF-13, BF-17, BF-18, BF-19, BF-40, BF-41, BF-47, BF-48 |
 | OBJ-03 | BF-28, BF-29, BF-30, BF-31, BF-42 |
 | OBJ-04 | BF-07, BF-08, BF-09, BF-27, BF-46 |
 | OBJ-05 | BF-33, BF-34, BF-35, BF-36, BF-37, BF-45 |
@@ -167,16 +168,19 @@ Priorités MoSCoW : **Must** (indispensable au MVP), **Should** (important, à l
 
 ## 5. Exigences non fonctionnelles
 
-Toutes les BNF sont de priorité Must.
+Toutes les BNF sont de priorité Must, sauf les exceptions décidées au Jour 4 (voir le [Product Backlog](backlog.md), section 6) :
+
+- **Should :** BNF-10 (scan OWASP ZAP) et BNF-26 (purge à 90 jours).
+- **Could :** la collecte des logs dans Loki (partie de BNF-20 ; les logs JSON avec identifiant de corrélation restent Must) et les tests Playwright cités comme méthode de vérification de BNF-01, BNF-13, BNF-24 et BNF-25 ; à défaut, BNF-01 est vérifiée par l'histogramme Prometheus, et BNF-13, BNF-24 et BNF-25 par un test manuel consigné.
 
 Charge nominale de référence : 100 agents connectés, 5 superviseurs, générateur à 2 appels par seconde.
 
 | ID | Domaine | Exigence mesurable | Comment la vérifier |
 |----|---------|--------------------|---------------------|
 | BNF-01 | Performance | Le délai entre un événement (changement de statut, nouvel appel) et son affichage sur le tableau de bord est inférieur à 1 s au 95e percentile, sous charge nominale. | Test Playwright horodatant l'événement et l'affichage ; histogramme Prometheus du délai de diffusion SignalR. |
-| BNF-02 | Performance | Le temps de réponse de l'API est inférieur à 300 ms au 95e percentile, sous charge nominale. | Seuil k6 `http_req_duration: p(95)<300` dans le pipeline. |
+| BNF-02 | Performance | Le temps de réponse de l'API est inférieur à 300 ms au 95e percentile, sous charge nominale. | Seuil k6 `http_req_duration: p(95)<300` dans le pipeline nocturne (non bloquant pour les push, BNF-29). |
 | BNF-03 | Performance | Quand un agent éligible existe, un appel passe « Affecté » en moins de 500 ms (95e percentile). Le délai est mesuré à partir de la création de l'appel si un agent éligible est déjà « Disponible », ou à partir du passage à « Disponible » de l'agent si l'appel attendait déjà. Les appels sans agent éligible ne sont pas mesurés. | Métrique Prometheus du délai d'affectation (instant de départ défini ci-contre → passage « Affecté »), vérifiée pendant le test de charge. |
-| BNF-04 | Capacité | Test de marge (5 × la charge nominale) : le système supporte 500 utilisateurs simulés simultanés pendant 10 minutes, avec un taux d'erreur inférieur à 1 % et un p95 API inférieur à 500 ms. | Scénario k6 à 500 utilisateurs virtuels ; seuils `http_req_failed: rate<0.01` et `http_req_duration: p(95)<500`. |
+| BNF-04 | Capacité | Test de marge (5 × la charge nominale) : le système supporte 500 utilisateurs simulés simultanés pendant 10 minutes, avec un taux d'erreur inférieur à 1 % et un p95 API inférieur à 500 ms. | Scénario k6 à 500 utilisateurs virtuels dans le pipeline nocturne ; seuils `http_req_failed: rate<0.01` et `http_req_duration: p(95)<500`. |
 | BNF-05 | Sécurité | Toutes les routes de l'API, sauf la connexion et les sondes de santé, exigent un jeton JWT valide ; la durée de vie du jeton est au plus de 60 minutes. | Tests d'intégration : sans jeton ou avec un jeton expiré, l'API répond 401. |
 | BNF-06 | Sécurité | Les mots de passe sont stockés uniquement sous forme hachée et salée (PBKDF2 via ASP.NET Core Identity, ou bcrypt). | Test d'intégration vérifiant qu'aucun mot de passe en clair n'est présent en base ; revue de code. |
 | BNF-07 | Sécurité | Le contrôle d'accès est fondé sur les rôles (RBAC) : chaque route déclare les rôles autorisés, et un rôle non autorisé reçoit 403. | Matrice de tests automatisés rôle × route : 100 % des routes couvertes. |
@@ -201,7 +205,7 @@ Charge nominale de référence : 100 agents connectés, 5 superviseurs, généra
 | BNF-26 | Données | L'historique des appels est conservé 90 jours ; au-delà, les appels sont purgés automatiquement. | Test d'intégration : un appel daté de 91 jours est supprimé par la tâche de purge, un appel daté de 89 jours est conservé. |
 | BNF-27 | Observabilité | Alertmanager émet une alerte si l'API est injoignable pendant plus de 1 minute. | Règle Prometheus `up{job="api"} == 0` avec `for: 1m` ; arrêter l'API pendant 2 minutes (`docker stop` ou mise à l'échelle à 0 réplica) : l'alerte est émise ; l'arrêter 30 s : aucune alerte. |
 | BNF-28 | Données | Tous les horodatages sont enregistrés en UTC (type PostgreSQL `timestamptz`). | Test d'intégration : un horodatage écrit puis relu depuis une session configurée dans un autre fuseau désigne le même instant ; revue du schéma : aucune colonne `timestamp` sans fuseau. |
-| BNF-29 | Livraison continue | Un push sur `main` déclenche automatiquement le build, les tests et le déploiement, terminés en moins de `X minutes` (TODO : durée à fixer). | Horodater le push et la fin du déploiement (application ArgoCD synchronisée et saine) ; le pipeline échoue si une étape échoue. |
+| BNF-29 | Livraison continue | Un push sur `main` déclenche automatiquement le build, les tests et le déploiement sur l'environnement de test, terminés en moins de 15 minutes ; le pipeline d'une pull request (build, tests, analyses) se termine en moins de 10 minutes ; les tests de charge k6 s'exécutent dans un pipeline nocturne et ne bloquent pas les push. | Horodater le push et la fin du déploiement (release Helm de l'environnement de test saine, ou application ArgoCD synchronisée et saine si ArgoCD est livré) ; horodater le début et la fin du pipeline d'une pull request ; le pipeline échoue si une étape échoue. |
 
 ## 6. Acteurs
 
@@ -211,12 +215,12 @@ Charge nominale de référence : 100 agents connectés, 5 superviseurs, généra
 |--------|------|-------------|
 | Agent | Humain | Conseiller qui traite les appels. Il se connecte, gère son propre statut (Disponible, En pause, Hors ligne) et reçoit automatiquement les appels qui correspondent à ses compétences et à son équipe. Persona : Yassine. |
 | Superviseur | Humain | Responsable qui pilote l'activité en temps réel. Il voit tous les agents et toutes les files, quelle que soit l'équipe (filtrables par équipe et par file, BF-26), suit le SLA, consulte statistiques et historique, et peut forcer le statut d'un agent (BF-27, RG-08). Persona : Sara. |
-| Administrateur | Humain | Gère les comptes, les rôles, les équipes, les compétences, les files, les stratégies de routage, les cibles SLA et le générateur de trafic. Il consulte le tableau de bord et les statistiques en lecture seule, pour vérifier l'effet de sa configuration. Persona : Karim. |
+| Administrateur | Humain | Gère les comptes, les rôles, les équipes, les compétences, les files, les stratégies de routage, les cibles SLA et le générateur de trafic. S'il est livré (BF-44, Could), il consulte le tableau de bord et les statistiques en lecture seule, pour vérifier l'effet de sa configuration. Persona : Karim. |
 | Système | Automatique | Composants internes, sans compte utilisateur ni interface : le **générateur de trafic** crée les appels simulés ; le **dispatcher** affecte les appels, gère le statut « En communication », termine les appels simulés et marque les abandons. |
 
 ### 6.2 Matrice des droits
 
-Légende : **Oui** = autorisé ; **Non** = refusé (403, BNF-07) ; **—** = sans objet pour cet acteur.
+Légende : **Oui** = autorisé ; **Non** = refusé (403, BNF-07) ; **Could** = autorisé seulement si l'exigence Could citée est livrée, sinon refusé (403) ; **—** = sans objet pour cet acteur.
 
 | Fonctionnalité | Agent | Superviseur | Administrateur | Système | Réf. |
 |----------------|:-----:|:-----------:|:--------------:|:-------:|------|
@@ -227,15 +231,15 @@ Légende : **Oui** = autorisé ; **Non** = refusé (403, BNF-07) ; **—** = san
 | Voir l'appel en cours qui lui est affecté | Oui | — | — | — | BF-10 |
 | Forcer le statut d'un agent | Non | Oui (RG-08) | Non | — | BF-27 |
 | Mettre un agent « En communication » ou l'en sortir | Non | Non | Non | Oui (seul) | BF-09, RG-04, RG-05 |
-| Voir le statut de tous les agents | Non | Oui | Oui (lecture seule) | — | BF-22, BF-23, BF-44 |
-| Voir les files et les appels en attente | Non | Oui | Oui (lecture seule) | — | BF-24, BF-44 |
-| Tableau de bord temps réel (dont SLA) | Non | Oui | Oui (lecture seule) | — | BF-04, BF-22 à BF-26, BF-29 à BF-31, BF-44 |
+| Voir le statut de tous les agents | Non | Oui | Could (lecture seule, BF-44) | — | BF-22, BF-23, BF-44 |
+| Voir les files et les appels en attente | Non | Oui | Could (lecture seule, BF-44) | — | BF-24, BF-44 |
+| Tableau de bord temps réel (dont SLA) | Non | Oui | Could (lecture seule, BF-44) | — | BF-04, BF-22 à BF-26, BF-29 à BF-31, BF-44 |
 | Statistiques et historique : les siennes | Non (BF-45, Could hors MVP) | — | — | — | BF-45 |
-| Statistiques et historique : de son équipe | Non | Oui | Oui (lecture seule) | — | BF-35, BF-36, BF-44 |
-| Statistiques et historique : de tous | Non | Oui | Oui (lecture seule) | — | BF-32 à BF-37, BF-44 |
+| Statistiques et historique : de son équipe | Non | Oui | Could (lecture seule, BF-44) | — | BF-35, BF-36, BF-44 |
+| Statistiques et historique : de tous | Non | Oui | Could (lecture seule, BF-44) | — | BF-32 à BF-37, BF-44 |
 | Gérer les comptes et les rôles | Non | Non | Oui | — | BF-03 |
 | Gérer les équipes, les compétences et l'affectation des agents | Non | Non | Oui | — | BF-12 |
-| Configurer les files (compétence, équipe, priorité, patience), les stratégies et le SLA | Non | Non | Oui | — | BF-13, BF-19, BF-28, BF-41, BF-42, section 7.1 |
+| Configurer les files (compétence, équipe, priorité, patience), les stratégies et le SLA | Non | Non | Oui | — | BF-13, BF-19, BF-28, BF-41, BF-42, BF-48, section 7.1 |
 | Paramétrer, démarrer et arrêter le générateur | Non | Non | Oui | — | BF-15, BF-16 |
 | Créer des appels simulés | Non | Non | Non | Oui (générateur) | BF-15 |
 | Affecter les appels | Non | Non | Non | Oui (dispatcher) | BF-17, BF-21 (Won't) |
@@ -331,10 +335,10 @@ Chaque stratégie est une implémentation du patron Strategy ; la stratégie d'u
 |----|-------|----------|
 | RG-18 | Un agent est éligible pour un appel s'il est « Disponible », s'il possède la compétence requise par la file et s'il appartient à l'équipe rattachée à la file. | BF-12, BF-13, BF-17 |
 | RG-19 | Dans une même file, les appels sont affectés dans leur ordre d'arrivée (FIFO). | BF-14, BF-18 |
-| RG-20 | Parmi les agents éligibles, l'agent choisi est déterminé par la stratégie de la file : « agent inactif depuis le plus longtemps » (par défaut) ou « tour de rôle ». | BF-19 |
+| RG-20 | Parmi les agents éligibles, l'agent choisi est déterminé par la stratégie de la file : « agent inactif depuis le plus longtemps » (par défaut) ou « tour de rôle ». | BF-19, BF-48 |
 | RG-21 | Stratégie « agent inactif depuis le plus longtemps » : l'agent choisi est celui dont le dernier passage à « Disponible » (RG-09) est le plus ancien. | BF-19 |
-| RG-22 | Stratégie « tour de rôle » : les agents éligibles sont triés par identifiant croissant, et l'agent choisi est le premier dont l'identifiant est strictement supérieur à celui du dernier agent servi par cette file ; s'il n'y en a pas, ou si la file n'a encore servi personne, c'est le premier de la liste. | BF-19 |
-| RG-23 | En cas d'égalité entre plusieurs agents dans une stratégie, l'agent qui a le plus petit identifiant est choisi. | BF-19 |
+| RG-22 | Stratégie « tour de rôle » : les agents éligibles sont triés par identifiant croissant, et l'agent choisi est le premier dont l'identifiant est strictement supérieur à celui du dernier agent servi par cette file ; s'il n'y en a pas, ou si la file n'a encore servi personne, c'est le premier de la liste. | BF-48 |
+| RG-23 | En cas d'égalité entre plusieurs agents dans une stratégie, l'agent qui a le plus petit identifiant est choisi. | BF-19, BF-48 |
 | RG-24 | L'affectation est déclenchée par événement (appel mis en attente, agent qui passe « Disponible », changement de compétence ou d'équipe), et un cycle de sécurité réévalue en plus tous les appels en attente au moins toutes les R ; sans agent éligible, l'appel reste « En attente » dans sa file. | BF-18, BNF-03 |
 | RG-25 | Un agent ne se voit jamais affecter plus d'un appel à la fois. | BF-09, BF-17 |
 | RG-37 | Même quand plusieurs déclenchements du dispatcher sont simultanés (événements et cycle de sécurité), un appel n'est affecté qu'une seule fois et un agent n'est engagé que sur un seul appel ; vérifié par un test de concurrence qui lance des affectations en parallèle sur les mêmes appels et les mêmes agents. | BF-09, BF-17 |
@@ -463,3 +467,8 @@ Le projet est accepté lorsque chaque critère est coché (oui / non) :
 | 17 | Le critère d'acceptation « un push sur `main` déclenche build, tests et déploiement » ne s'appuie que sur des objectifs (OBJ-T01, OBJ-T06), pas sur une BNF. | **Résolu :** BNF-29 (durée `X minutes` à fixer). |
 | 18 | L'accès en lecture seule de l'administrateur au tableau de bord et aux statistiques (matrice 6.2) n'est porté par aucune BF : BF-04 ne traite que le refus opposé à l'agent. | **Résolu :** BF-44. |
 | 19 | RG-02 (statut initial « Hors ligne ») et RG-07 (déconnexion différée pendant un appel) sont rattachées à BF-03, BF-08 et BF-02, mais ces BF n'énoncent pas ces comportements. | **Résolu :** BF-03 (statut initial) et BF-02 (déconnexion différée) complétées. |
+| 20 | BF-19 imposait deux stratégies en Must, alors que le second algorithme figure parmi les éléments à couper en premier en cas de retard. | **Résolu (Jour 4) :** BF-19 (Must) ne garde que la stratégie par défaut « agent inactif depuis le plus longtemps » ; « tour de rôle » devient BF-48 (Should), coupée en dernier car elle démontre le patron Strategy. |
+| 21 | Capacité insuffisante pour toutes les exigences Must et Should (backlog du Jour 4 : 170 points planifiés pour 154 points de capacité). | **Décision (Jour 4) :** BF-44 passe Could ; BNF-10 et BNF-26 passent Should ; Loki, Playwright et ArgoCD passent Could (section 5). Révision après le Sprint 1, avec la vélocité mesurée. |
+| 22 | BNF-29 : durée `X minutes` non fixée. | **Résolu (Jour 4) :** 15 min du push au déploiement sur l'environnement de test, 10 min pour une pull request, k6 en pipeline nocturne non bloquant. |
+| 23 | ArgoCD (OBJ-T06) et Playwright (OBJ-T04) sont désormais Could : ces deux objectifs ne sont plus garantis en totalité. | Accepté : déploiement automatique par Jenkins + Helm (Must) ; ArgoCD et Playwright livrés seulement s'il reste du temps. |
+| 24 | Le déploiement de production avec retour arrière (Must) et HTTPS (Should) n'ont pas d'exigence source ; BNF-05 n'exempte pas `/metrics` ; le taux d'occupation (BF-35) n'a pas de formule. | Ouvert : voir le Product Backlog, section 5.4. |
