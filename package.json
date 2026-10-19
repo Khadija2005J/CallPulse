@@ -1,0 +1,13 @@
+{
+  "name": "callpulse",
+  "private": true,
+  "description": "Repository tooling for CallPulse (commit message checks). The application code lives in its own folders.",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "21.2.4",
+    "@commitlint/config-conventional": "21.2.4",
+    "husky": "9.1.7"
+  }
+}

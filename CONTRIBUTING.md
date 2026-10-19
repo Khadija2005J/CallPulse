@@ -89,7 +89,9 @@ ci(jenkins): add gitleaks stage
 docs: add contributing guide
 ```
 
-From Sprint 0 (Day 5), these rules are checked on every commit by **commitlint** with a **husky** `commit-msg` hook. A commit with an invalid message is refused.
+From Sprint 0 (Day 5), these rules are checked on every commit by **commitlint** with a **husky** `commit-msg` hook. A commit with an invalid message is refused. An unknown scope only gives a warning.
+
+After cloning the repository, run `npm install` once at its root to activate the hook (Node.js 20 or later). The rules are in `commitlint.config.mjs`.
 
 ## 4. Pull requests
 
