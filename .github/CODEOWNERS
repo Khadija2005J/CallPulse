@@ -1,0 +1,10 @@
+# Code owners: GitHub asks these people to review the pull requests that touch their files.
+# CallPulse has one developer, so the owner of everything is Khadija2005J.
+# The last matching line wins. See CONTRIBUTING.md.
+
+*                     @Khadija2005J
+
+# Files that change how the project is built, tested or merged
+/.github/             @Khadija2005J
+/.husky/              @Khadija2005J
+commitlint.config.mjs @Khadija2005J
