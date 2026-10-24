@@ -1,0 +1,97 @@
+@startuml class-routing
+' CallPulse - routing classes: Strategy pattern, strategy created by a Factory (spec section 7.4).
+' Source: BF-19, BF-48, RG-18 to RG-25, RG-37.
+' Strategies are pure Domain classes; the dispatcher lives in the Application layer.
+
+title CallPulse — Routage : Strategy + Factory
+
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+hide empty members
+
+package "Domain" {
+
+  class EligibilityPolicy <<domain service>> {
+    + EligibleAgents(call : Call, queue : Queue, agents : IEnumerable<Agent>) : IReadOnlyList<Agent>
+  }
+
+  interface ICallRoutingStrategy {
+    + SelectAgent(queue : Queue, eligibleAgents : IReadOnlyList<Agent>) : Agent?
+  }
+
+  class LongestIdleStrategy {
+    + SelectAgent(queue : Queue, eligibleAgents : IReadOnlyList<Agent>) : Agent?
+  }
+
+  class RoundRobinStrategy <<Should BF-48>> {
+    + SelectAgent(queue : Queue, eligibleAgents : IReadOnlyList<Agent>) : Agent?
+  }
+
+  class RoutingStrategyFactory {
+    + Create(type : RoutingStrategyType) : ICallRoutingStrategy
+  }
+
+  enum RoutingStrategyType {
+    LongestIdle
+    RoundRobin
+  }
+
+  class Queue {
+    + Strategy : RoutingStrategyType
+    + LastServedAgentId : int?
+  }
+
+  class Agent
+  class Call
+}
+
+package "Application" {
+  class CallDispatcher <<application service>> {
+    + DispatchAsync(now : DateTimeOffset) : Task
+  }
+}
+
+ICallRoutingStrategy <|.. LongestIdleStrategy
+ICallRoutingStrategy <|.. RoundRobinStrategy
+RoutingStrategyFactory ..> ICallRoutingStrategy : crée >
+RoutingStrategyFactory ..> RoutingStrategyType : lit >
+Queue "0..*" --> "1" RoutingStrategyType : Strategy
+
+CallDispatcher --> "1" RoutingStrategyFactory
+CallDispatcher --> "1" EligibilityPolicy
+CallDispatcher ..> ICallRoutingStrategy : utilise >
+EligibilityPolicy ..> Agent
+EligibilityPolicy ..> Call
+ICallRoutingStrategy ..> Agent : choisit >
+
+note right of EligibilityPolicy
+  <b>Éligibilité (RG-18)</b>
+  agent Disponible
+  + compétence requise par la file
+  + membre de l'équipe de la file.
+  C'est un filtre, pas une stratégie.
+end note
+
+note right of LongestIdleStrategy
+  <b>Par défaut, Must (BF-19, RG-21)</b>
+  LastAvailableAt le plus ancien ;
+  égalité → plus petit Id (RG-23).
+end note
+
+note right of RoundRobinStrategy
+  <b>RG-22</b>
+  agents triés par Id croissant ;
+  premier Id > Queue.LastServedAgentId,
+  sinon le premier de la liste.
+end note
+
+note bottom of CallDispatcher
+  <b>Cycle du dispatcher (RG-15, RG-19, RG-24 à RG-28, RG-37)</b>
+  déclenché par événement + cycle de sécurité toutes les R (1 s).
+  1. abandons d'abord (RG-15)
+  2. appels par priorité de file croissante, puis FIFO (RG-19, RG-27, RG-28)
+  3. EligibilityPolicy puis Factory.Create(queue.Strategy).SelectAgent(...)
+  4. affectation unique, même en concurrence (RG-25, RG-37)
+end note
+
+@enduml
