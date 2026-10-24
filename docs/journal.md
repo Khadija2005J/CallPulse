@@ -151,3 +151,48 @@ Traceability after the fixes: 49 BF, 31 BNF and 45 RG. Only BF-21 and BF-38 (Won
 - Definition of Done (including an ADR for each structuring choice, BNF-16, and a manual browser check, BNF-24).
 - GitHub repository and project board.
 - Branching strategy and commit conventions.
+
+## Day 5 — 2026-10-11 → 2026-10-19 (Sprint 0, GitHub setup)
+
+Day 5 started on 2026-10-11 and was paused, then finished on 2026-10-19.
+
+### Done
+
+- Public repository `Khadija2005J/CallPulse` created, `main` pushed, tag `spec-v1.0` pushed.
+- Wrote `docs/definition-of-done.md` (story, sprint and release levels, Definition of Ready), merged through the first pull request (#1).
+- Wrote `docs/sprint-plan.md` (#2): sprint rules and events for a solo developer, calendar S0 to S6, Sprint 1 goal, 8 stories (27 points) in dependency order, each split into tasks estimated in hours.
+- GitHub Projects board **CallPulse** (public, linked to the repository): columns Todo / In Progress / Done, custom fields Points, MoSCoW, Epic and Sprint (2-week iterations from 2026-10-26), default workflows (closed or merged → Done).
+- Sprint 1 issues #3 to #10, one per story, with acceptance criteria and tasks as a checklist, all fields filled (27 points). Created with GitHub CLI (`gh`), installed for this.
+- Wrote `CONTRIBUTING.md` (#11): GitHub Flow, branch names, Conventional Commits, pull request rules, squash merge, tags.
+- commitlint 21.2.4 + husky 9.1.7 (#12): a `commit-msg` hook refuses any commit whose message does not follow Conventional Commits. Checked with a bad message, which was refused.
+- `.github/CODEOWNERS` and `.github/PULL_REQUEST_TEMPLATE.md` (#13): every pull request starts with "What", `Closes #`, "How it was tested" and the DoD checklist.
+- Protection of `main`: pull request required, 0 approvals, rules also apply to admins, no force push, no deletion. Checked with a direct push, which GitHub rejected (`GH006`).
+
+### Decisions
+
+- **Sprint 1 starts on 2026-10-26** (ends 2026-11-06), after the Sprint 0 tooling, so that the Sprint 0 checks of the DoD are active before the first line of code. Sprint 0 therefore runs until 2026-10-23.
+- **Jenkins (US-51) is third in Sprint 1**, right after the two skeletons, so that every later story goes through the pipeline from its first pull request.
+- **Squash and merge only** (merge commits and rebase disabled in the repository settings): one commit per pull request on `main`, with a Conventional Commits title. Branches are deleted automatically after the merge.
+- **0 required approvals**: I cannot approve my own pull requests, so the DoD checklist and a re-read of "Files changed" replace the review.
+- **Commit e-mail**: commits use the GitHub noreply address of Khadija2005J. The 20 first commits stay attributed to my other account, because the Gmail address is attached to it.
+- **Unknown commit scope = warning only**, so that a new scope does not block a commit; the list is in `commitlint.config.mjs`.
+- The repository tooling lives in a root `package.json`; the frontend will have its own in `frontend/`.
+
+### Difficulties
+
+- Commits were shown under my other GitHub account because of the Gmail address. Adding it to Khadija2005J failed ("email is already in use"), so I switched to the noreply address for new commits.
+- The first squash merge gave a warning on `git branch -d`: the squash creates a new commit, so Git does not see the branch as merged. Solved with `git branch -D`, now written in `CONTRIBUTING.md`.
+- The Epic field was first created with all eight epics in a single option; recreated as eight separate options.
+- Creating eight issues by hand was slow, so I installed GitHub CLI. `gh issue create --project` did not add the issues to the board; `gh project item-add` did.
+- The protection rule was first saved with 1 required approval, which would have blocked all my pull requests. Changed to 0.
+
+### Open points
+
+- Sprint 5 (2026-12-21 → 2027-01-01) covers the end-of-year holidays: decide at the S4 review whether to reduce or shift it.
+- US-50 mentions the call generator, which only exists from US-17 (S3): in S1 Compose runs API, frontend and database.
+- Delete the empty "untitled project" on GitHub.
+
+### Next — Sprint 1 (from 2026-10-26)
+
+- Sprint planning: move US-48 (#3) to In Progress, branch `feature/us-48-backend-skeleton`.
+- First story pull request using the template and `Closes #3`.
