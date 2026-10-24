@@ -162,7 +162,27 @@ The call generator service named in US-50 does not exist before US-17 (S3). In S
 | Domain model and API contract design is only counted inside US-48 | Velocity looks lower | Accepted (backlog section 6.3); the S1 velocity will show it |
 | Must set is 84 % of total capacity | Little margin for S2 to S6 | If S1 velocity < 28, discuss US-31, US-02 and US-43 first (backlog section 6.3) |
 
-### 3.5 Sprint 1 done when
+### 3.5 Daily Sprint Backlog (Day 6 → Day 15)
+
+Added on Day 6. About 2.8 hours of focused work per day (28 points per 2 weeks). Days 6 and 7 are spent on UML design, which the backlog only counts as T-48.3 (0.5 h): the design is done once, up front, instead of story by story. This leaves about 23 hours for 26.5 hours of remaining tasks, so **US-03 is at risk**. If it is not done on Day 15, it goes back to the backlog and is the first candidate for Sprint 2 (DoD: no "almost done").
+
+| Day | Date | Work | Est. | Story |
+|-----|------|------|-----:|-------|
+| 6 | Mon 2026-10-26 | Sprint planning; UML use case diagram and class diagrams (domain, routing), render script | — | T-48.3 (design) |
+| 7 | Tue 2026-10-27 | UML sequence diagrams (status change, call assignment) and activity diagram (dispatcher cycle) | — | T-48.3 (design) |
+| 8 | Wed 2026-10-28 | T-48.1, T-48.2, T-48.4, T-48.5: solution, build settings, health probes, architecture tests | 2.5 h | US-48 |
+| 9 | Thu 2026-10-29 | T-49.1 → T-49.5: frontend skeleton; T-51.1: Jenkins in Docker (JCasC) | 3.5 h | US-49, US-51 |
+| 10 | Fri 2026-10-30 | T-51.2 → T-51.4: `Jenkinsfile`, test reports, gitleaks | 3 h | US-51 |
+| 11 | Mon 2026-11-02 | T-51.5: timings and polling; T-54.1 → T-54.4: Testcontainers | 2.5 h | US-51, US-54 |
+| 12 | Tue 2026-11-03 | T-60.1 → T-60.3: structured logs; T-50.1: API Dockerfile | 3 h | US-60, US-50 |
+| 13 | Wed 2026-11-04 | T-50.2 → T-50.5: frontend Dockerfile, Compose, migrations, fresh-clone check | 4 h | US-50 |
+| 14 | Thu 2026-11-05 | T-01.1, T-01.2: Identity, login endpoint and JWT | 2.5 h | US-01 |
+| 15 | Fri 2026-11-06 | T-01.3, T-01.4: login page, integration tests; sprint review, velocity, retrospective, tag `sprint-1` | 2.5 h | US-01 |
+| — | if time allows | T-03.1 → T-03.3: authorization policies, route guard, role × route test | 3 h | US-03 |
+
+The daily check (section 1) compares this table with the board each day; a slip of more than half a day is noted in the journal.
+
+### 3.6 Sprint 1 done when
 
 - All 8 stories meet the DoD, or the unfinished ones are back in the backlog.
 - The sprint-level checks of the DoD (section 3) are met: `docker compose up` on a fresh clone in < 3 min, demo, velocity and retrospective in the journal, tag `sprint-1`.

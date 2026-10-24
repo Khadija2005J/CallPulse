@@ -1,0 +1,183 @@
+@startuml usecase-1-acces-statuts
+' CallPulse - use case diagrams (MVP: Must and Should requirements only).
+' Source: docs/cahier-des-charges.md section 6.2 (rights matrix), spec v1.0.
+' Could items are not drawn (BF-06, BF-11, BF-32, BF-39, BF-40, BF-44 to BF-47, BF-49).
+' Split into 4 diagrams (one per package group) because a single diagram was unreadable:
+' usecase-1-acces-statuts.png, usecase-2-appels.png, usecase-3-supervision.png, usecase-4-administration.png.
+' Labels are in French (BNF-25); aliases are in English.
+
+
+' =====================================================================
+' Page 1 - Access and statuses
+' =====================================================================
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+title CallPulse — Cas d'utilisation (1/4) : Accès et statuts
+
+actor "Agent" as Agent
+actor "Superviseur" as Supervisor
+actor "Administrateur" as Admin
+
+rectangle "CallPulse" {
+  package "Accès" {
+    usecase "Se connecter\n<size:10>BF-01</size>" as UC_Login
+    usecase "Se déconnecter\n<size:10>BF-02, RG-07</size>" as UC_Logout
+    usecase "Modifier son mot de passe\n<size:10>BF-05</size>" as UC_ChangePassword
+  }
+  package "Statuts" {
+    usecase "Consulter son statut\n<size:10>BF-07</size>" as UC_ViewOwnStatus
+    usecase "Changer son statut\n<size:10>BF-08</size>" as UC_ChangeOwnStatus
+    usecase "Consulter son appel en cours\n<size:10>BF-10</size>" as UC_ViewCurrentCall
+    usecase "Forcer le statut d'un agent\n<size:10>BF-27, RG-08</size>" as UC_ForceStatus
+    usecase "Valider la transition de statut\n<size:10>RG-03, RG-09</size>" as UC_ValidateTransition
+  }
+}
+
+Agent --> UC_Login
+Agent --> UC_Logout
+Agent --> UC_ChangePassword
+Supervisor --> UC_Login
+Supervisor --> UC_Logout
+Supervisor --> UC_ChangePassword
+Admin --> UC_Login
+Admin --> UC_Logout
+Admin --> UC_ChangePassword
+
+Agent --> UC_ViewOwnStatus
+Agent --> UC_ChangeOwnStatus
+Agent --> UC_ViewCurrentCall
+Supervisor --> UC_ForceStatus
+
+UC_ChangeOwnStatus ..> UC_ValidateTransition : <<include>>
+UC_ForceStatus ..> UC_ValidateTransition : <<include>>
+
+@enduml
+
+@startuml usecase-2-appels
+
+' =====================================================================
+' Page 2 - Call processing (System)
+' =====================================================================
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+title CallPulse — Cas d'utilisation (2/4) : Traitement des appels
+
+actor "Système\n(générateur, dispatcher)" as System <<système>>
+
+rectangle "CallPulse" {
+  package "Traitement des appels" {
+    usecase "Générer des appels simulés\n<size:10>BF-15, RG-12</size>" as UC_GenerateCalls
+    usecase "Affecter un appel\n<size:10>BF-17, BF-18, RG-18, RG-24</size>" as UC_AssignCall
+    usecase "Sélectionner l'agent\nselon la stratégie de la file\n<size:10>BF-19, BF-48, RG-20</size>" as UC_SelectAgent
+    usecase "Terminer un appel\n<size:10>RG-14, RG-06</size>" as UC_CompleteCall
+    usecase "Marquer un appel abandonné\n<size:10>BF-20, RG-15</size>" as UC_AbandonCall
+  }
+  package "Statuts" {
+    usecase "Valider la transition de statut\n<size:10>RG-03, RG-09</size>" as UC_ValidateTransition2
+  }
+}
+
+System --> UC_GenerateCalls
+System --> UC_AssignCall
+System --> UC_CompleteCall
+System --> UC_AbandonCall
+
+UC_AssignCall ..> UC_SelectAgent : <<include>>
+UC_AssignCall ..> UC_ValidateTransition2 : <<include>>\n(agent → En communication)
+UC_CompleteCall ..> UC_ValidateTransition2 : <<include>>\n(agent → Disponible\nou Hors ligne)
+
+@enduml
+
+@startuml usecase-3-supervision
+
+' =====================================================================
+' Page 3 - Supervision (Supervisor)
+' =====================================================================
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+title CallPulse — Cas d'utilisation (3/4) : Supervision
+
+actor "Superviseur" as Supervisor
+
+rectangle "CallPulse" {
+  package "Supervision" {
+    usecase "Consulter le tableau de bord\ntemps réel\n<size:10>BF-22 à BF-25</size>" as UC_Dashboard
+    usecase "Filtrer par équipe et par file\n<size:10>BF-26</size>" as UC_FilterDashboard
+    usecase "Consulter le taux SLA\n<size:10>BF-29, BF-30, BF-42</size>" as UC_ViewSla
+    usecase "Recevoir l'alerte SLA rouge\n<size:10>BF-31</size>" as UC_SlaRedAlert
+    usecase "Consulter l'historique des appels\n<size:10>BF-33</size>" as UC_History
+    usecase "Filtrer l'historique\n<size:10>BF-34</size>" as UC_FilterHistory
+    usecase "Consulter les statistiques\n<size:10>BF-35 à BF-37</size>" as UC_Statistics
+  }
+}
+
+Supervisor --> UC_Dashboard
+Supervisor --> UC_ViewSla
+Supervisor --> UC_History
+Supervisor --> UC_Statistics
+
+UC_FilterDashboard ..> UC_Dashboard : <<extend>>
+UC_SlaRedAlert ..> UC_ViewSla : <<extend>>\n[niveau rouge,\njournée en cours]
+UC_FilterHistory ..> UC_History : <<extend>>
+
+@enduml
+
+@startuml usecase-4-administration
+
+' =====================================================================
+' Page 4 - Administration (Administrator)
+' =====================================================================
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+title CallPulse — Cas d'utilisation (4/4) : Administration
+
+actor "Administrateur" as Admin
+
+rectangle "CallPulse" {
+  package "Administration" {
+    usecase "Gérer les comptes et les rôles\n<size:10>BF-03</size>" as UC_ManageAccounts
+    usecase "Gérer les équipes\net les compétences\n<size:10>BF-12</size>" as UC_ManageTeamsSkills
+    usecase "Affecter les agents\nà une équipe et des compétences\n<size:10>BF-12</size>" as UC_AssignAgents
+    usecase "Configurer une file\n<size:10>BF-13, BF-41, RG-42 à RG-44</size>" as UC_ConfigureQueue
+    usecase "Choisir la stratégie de routage\n<size:10>BF-19, BF-48</size>" as UC_ChooseStrategy
+    usecase "Configurer le SLA d'une file\n<size:10>BF-28, BF-42</size>" as UC_ConfigureSla
+    usecase "Journaliser la modification SLA\n<size:10>BF-43, RG-41</size>" as UC_AuditSla
+    usecase "Piloter le générateur\n<size:10>BF-15, BF-16</size>" as UC_ControlGenerator
+  }
+}
+
+Admin --> UC_ManageAccounts
+Admin --> UC_ManageTeamsSkills
+Admin --> UC_AssignAgents
+Admin --> UC_ConfigureQueue
+Admin --> UC_ConfigureSla
+Admin --> UC_ControlGenerator
+
+UC_ConfigureQueue ..> UC_ChooseStrategy : <<include>>
+UC_ConfigureSla ..> UC_AuditSla : <<include>>
+
+@enduml

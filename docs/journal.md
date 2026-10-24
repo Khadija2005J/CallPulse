@@ -196,3 +196,39 @@ Day 5 started on 2026-10-11 and was paused, then finished on 2026-10-19.
 
 - Sprint planning: move US-48 (#3) to In Progress, branch `feature/us-48-backend-skeleton`.
 - First story pull request using the template and `Closes #3`.
+
+## Day 6 — 2026-10-26 (Sprint 1, day 1 of 10)
+
+### Done
+
+- Sprint planning: daily Sprint Backlog for Day 6 to Day 15 added to `docs/sprint-plan.md` (section 3.5), instead of a new file, because the Sprint 1 plan already existed (#2).
+- `scripts/render-uml.ps1`: checks that Docker is running, then renders every `docs/uml/*.puml` to `docs/uml/img/` with the `plantuml/plantuml` image (no local Java or PlantUML install).
+- Use case diagrams (`docs/uml/usecase.puml`), derived from the rights matrix (spec section 6.2), MVP only (Must and Should). The single diagram was unreadable, so it is split into four: access and statuses, call processing, supervision, administration.
+- Domain class diagram (`docs/uml/class.puml`) and routing class diagram (`docs/uml/class-routing.puml`), checked against RG-01 to RG-45.
+
+### Modelling decisions
+
+- **User and Agent are separate classes** (`User 1 — 0..1 Agent`): status, team, skills and history only apply to agents, and password storage stays in ASP.NET Core Identity (Infrastructure), outside the Domain.
+- **Skill level:** `AgentSkill.Level` is nullable and empty in the MVP, because levels only exist in BF-40 (Could, backlog gap #10). The scale is decided only if US-25 is planned.
+- **A Call keeps its Queue** after the queue is deactivated: `Call → Queue` is `1`, and soft delete only sets `IsActive = false` (RG-43), so history and statistics still show the queue.
+- **SLA results are stored per call:** `MetSlaThreshold` and `AppliedThresholdSeconds` are set at answer or abandon and never recalculated (RG-39, RG-40). Rates and levels are computed on demand by `SlaPolicy`; stored daily totals would only serve BF-32 (Could).
+- **No separate CallHistory entity:** a Completed or Abandoned `Call` already holds every BF-33 field, so it is the history (RG-17). The 90-day purge (US-46) deletes old calls.
+- **Skill matching is an eligibility filter, not a strategy:** `EligibilityPolicy` applies RG-18 (Available, required skill, queue's team), then the queue's strategy chooses: `LongestIdleStrategy` (Must) or `RoundRobinStrategy` (Should). The initial plan named a "skill-based strategy", which the spec does not have.
+- **Integer identifiers,** because RG-22, RG-23 and RG-28 sort by increasing identifier.
+- Attributes required by the rules but missing from the first outline were added: `Queue.TeamId`, `Queue.RequiredSkillId` (RG-18), `Queue.LastServedAgentId` (RG-22), `Agent.LastAvailableAt` (RG-21), `Agent.LogoutPending` (RG-07), `Call.RequiredSkillId` (RG-12), `Call.AppliedThresholdSeconds` (RG-39).
+- State-change rule in `Agent.ChangeStatus` (transition table and evaluation order of section 7.2); SLA computation in `SlaPolicy`. Domain classes depend on no framework; time comes from an injectable clock.
+
+### Difficulties
+
+- `newpage` only works for sequence diagrams in PlantUML; the use case split uses several named `@startuml` blocks in one file instead.
+- commitlint refused a commit whose body line was over 100 characters; the body was wrapped.
+
+### Open points
+
+- Use case vs. story check: no use case without a story. Stories without a use case are cross-cutting or technical (US-03, US-27, US-31, E8), plus US-46 (purge by the System), which is not in the rights matrix.
+- The two UML days are not in the 27 points, so US-03 is at risk (sprint plan section 3.5).
+- The render script uses the `latest` PlantUML image; pin a version if renders start to differ.
+
+### Tomorrow — Day 7
+
+- UML sequence diagrams (agent status change, call assignment) and activity diagram (dispatcher cycle).
